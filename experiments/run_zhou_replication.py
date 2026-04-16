@@ -34,7 +34,7 @@ from utils.random import seed_everything
 def main():
     parser = argparse.ArgumentParser(description="Zhou et al. (2021) replication")
     parser.add_argument("--d", type=int, default=2, help="Number of assets")
-    parser.add_argument("--n_steps", type=int, default=100_000)
+    parser.add_argument("--n_steps", type=int, default=200_000)
     args = parser.parse_args()
 
     d = args.d
@@ -57,7 +57,7 @@ def main():
         model=ModelConfig(
             architecture="dgm", hidden_size=256, num_dgm_layers=4,
         ),
-        training=TrainingConfig(n_steps=args.n_steps, lbfgs_finetune=True, lbfgs_steps=300),
+        training=TrainingConfig(n_steps=args.n_steps, lbfgs_finetune=True, lbfgs_steps=500),
         output_dir=out_dir,
     )
 

@@ -106,14 +106,18 @@ class ZhouEtAlPricer:
 
         S0_train = K * np.exp(rng.uniform(-0.5, 0.5, size=(n_samples, d)))
 
-        eps = rng.randn(n_samples, d)
-        Z = eps @ L.T
-        drift = (r - 0.5 * sigma**2) * T
-        diffusion = sigma * np.sqrt(T) * Z
-        S_T = S0_train * np.exp(drift + diffusion)
-
-        payoffs = self.payoff_fn(S_T)
-        V_train = np.exp(-r * T) * payoffs
+        # Average multiple MC paths per initial condition to reduce label noise
+        n_mc = 50
+        V_train = np.zeros(n_samples)
+        for _ in range(n_mc):
+            eps = rng.randn(n_samples, d)
+            Z = eps @ L.T
+            drift = (r - 0.5 * sigma**2) * T
+            diffusion = sigma * np.sqrt(T) * Z
+            S_T = S0_train * np.exp(drift + diffusion)
+            payoffs = self.payoff_fn(S_T)
+            V_train += np.exp(-r * T) * payoffs
+        V_train /= n_mc
 
         return S0_train, V_train
 

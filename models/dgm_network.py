@@ -128,7 +128,7 @@ class DGMNetwork(nn.Module):
 
         if self.use_hard:
             tau = self.T - t
-            if self.payoff_unclipped_fn is not None and self.hard_smoothing_eps > 0:
+            if self.training and self.payoff_unclipped_fn is not None and self.hard_smoothing_eps > 0:
                 phi = smoothed_payoff(self.payoff_unclipped_fn, x, self.hard_smoothing_eps)
             else:
                 phi = self.payoff_fn(x)
