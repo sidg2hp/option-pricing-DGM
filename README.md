@@ -304,12 +304,6 @@ The higher gamma error relative to delta is expected: gamma involves second deri
 
 Scaling experiments for $d \ge 3$ were computationally infeasible under the available hardware. The code is fully functional for $d = \{3, 5, 7, 10\}$ — the experiment script detects existing results and resumes from checkpoints.
 
-<p align="center">
-  <img src="figures/scaling_error.png" width="400" alt="Scaling error"/>
-  <img src="figures/scaling_time.png" width="400" alt="Scaling time"/>
-</p>
-<p align="center"><em>Relative L² error and training time vs number of assets (completed dimensions).</em></p>
-
 ### Ablation Study
 
 **Setup**: $d=2$ basket call, 50k Adam steps (no L-BFGS), compared against MC reference (500k paths).
@@ -572,6 +566,4 @@ pytest tests/ -v
 
 2. **Zhou, Z., et al.** (2021). Neural network regression for pricing multi-asset European options. *Journal of Computational and Applied Mathematics*. [DOI:10.1016/j.cam.2021.113508](https://doi.org/10.1016/j.cam.2021.113508)
 
-3. **Al-Aradi, A., Diez, A., Kandasamy, K., & Szpruch, L.** (2022). Solving nonlinear and high-dimensional partial differential equations via deep learning. *Proceedings of the Conference on Neural Information Processing Systems*.
 
-4. **Black, F. & Scholes, M.** (1973). The pricing of options and corporate liabilities. *Journal of Political Economy*, 81(3), 637–654.
