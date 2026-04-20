@@ -134,7 +134,14 @@ def main():
 
     all_results = {}
     for d in args.dims:
-        all_results[d] = run_single_d(d, args.n_steps)
+        result_path = f"results/scaling/d_{d}/result.json"
+        if os.path.exists(result_path):
+            print(f"\nSkipping d={d} (found existing results at {result_path})")
+            import json
+            with open(result_path, "r") as f:
+                all_results[d] = json.load(f)
+        else:
+            all_results[d] = run_single_d(d, args.n_steps)
 
     save_json(all_results, "results/scaling/scaling_summary.json")
 
