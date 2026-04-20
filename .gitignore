@@ -9,8 +9,7 @@ build/
 .venv/
 venv/
 env/
-results/
-!results/.gitkeep
+# results/ is now tracked (JSON + plots); .pt weights are excluded by *.pt rule
 wandb/
 *.pt
 *.pth

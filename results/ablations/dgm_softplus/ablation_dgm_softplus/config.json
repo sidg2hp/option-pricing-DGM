@@ -1,0 +1,71 @@
+{
+  "name": "ablation_dgm_softplus",
+  "market": {
+    "d": 2,
+    "r": 0.05,
+    "T": 1.0,
+    "K": 1.0,
+    "sigma": [
+      0.2,
+      0.2
+    ],
+    "rho": [
+      [
+        1.0,
+        0.3
+      ],
+      [
+        0.3,
+        1.0
+      ]
+    ],
+    "S0": [
+      1.0,
+      1.0
+    ],
+    "payoff_type": "basket_call"
+  },
+  "model": {
+    "architecture": "dgm",
+    "hidden_size": 256,
+    "num_dgm_layers": 4,
+    "activation": "softplus",
+    "use_hard_terminal_constraint": true,
+    "hard_constraint_smoothing_eps": 0.01,
+    "payoff_smoothing_eps_init": 0.1,
+    "payoff_smoothing_anneal_fraction": 0.3
+  },
+  "sampler": {
+    "sampler_type": "risk_neutral",
+    "n_interior": 4096,
+    "n_terminal": 1024,
+    "n_boundary": 512,
+    "domain_std_multiplier": 4.0
+  },
+  "training": {
+    "n_steps": 50000,
+    "optimizer": "adam",
+    "lr_init": 0.001,
+    "lr_min": 1e-05,
+    "scheduler": "cosine_warm_restarts",
+    "T_0": 10000,
+    "T_mult": 2,
+    "grad_clip_norm": 1.0,
+    "lambda_pde": 1.0,
+    "lambda_terminal": 10.0,
+    "lambda_boundary": 1.0,
+    "use_ntk_balancing": false,
+    "lbfgs_finetune": false,
+    "lbfgs_steps": 500,
+    "log_every": 500,
+    "eval_every": 5000,
+    "seed": 42
+  },
+  "mc": {
+    "n_paths": 1000000,
+    "use_antithetic": true,
+    "seed": 0
+  },
+  "output_dir": "results/ablations/dgm_softplus",
+  "device": "cuda"
+}
