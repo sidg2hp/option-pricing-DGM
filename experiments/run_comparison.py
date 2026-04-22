@@ -165,7 +165,7 @@ def run_comparison_for_d(
 
 def main():
     parser = argparse.ArgumentParser(description="Three-way comparison: DGM vs Zhou vs MC")
-    parser.add_argument("--dims", type=int, nargs="+", default=[1, 2, 3, 5])
+    parser.add_argument("--dims", type=int, nargs="+", default=[1, 2, 3, 5, 7, 10])
     parser.add_argument("--model_base", type=str, default="results/scaling")
     parser.add_argument("--n_dgm_steps", type=int, default=50_000,
                         help="DGM steps (only used if no pre-trained model found)")

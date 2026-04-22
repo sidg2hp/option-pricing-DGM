@@ -146,7 +146,7 @@ def run_hybrid_mc_for_d(
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dims", type=int, nargs="+", default=[1, 2, 3, 5])
+    parser.add_argument("--dims", type=int, nargs="+", default=[1, 2, 3, 5, 7, 10])
     parser.add_argument("--n_steps", type=int, default=50_000)
     parser.add_argument("--n_mc", type=int, default=100_000)
     parser.add_argument("--model_base", type=str, default="results/scaling",
