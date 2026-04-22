@@ -1,6 +1,7 @@
-"""Ablation experiments: architecture, activation, sampling, and loss weights.
+"""Ablation experiments: architecture, activation, constraint, and sampling.
 
 Runs DGM with different configurations and compares errors.
+Expanded from 4 to 7 ablations for paper-ready results.
 """
 
 import argparse
@@ -17,7 +18,6 @@ from evaluation.metrics import relative_l2_error
 from evaluation.monte_carlo import MonteCarloPricer
 from models.model_factory import build_model
 from pde.payoffs import get_payoff_fn
-from plotting.zhou_figures import plot_dgm_ablation_architecture, plot_dgm_ablation_activation
 from training.trainer import DGMTrainer
 from utils.io_utils import save_json
 from utils.random import seed_everything
@@ -45,6 +45,7 @@ def run_ablation(
     name: str,
     model_config: ModelConfig,
     sampler_config: SamplerConfig = SamplerConfig(),
+    training_config: TrainingConfig | None = None,
     n_steps: int = 50_000,
 ) -> dict:
     """Run a single ablation experiment.
@@ -55,6 +56,8 @@ def run_ablation(
         Ablation identifier.
     model_config : ModelConfig
     sampler_config : SamplerConfig
+    training_config : TrainingConfig or None
+        If None, uses default (hard constraint, no L-BFGS).
     n_steps : int
 
     Returns
@@ -63,6 +66,10 @@ def run_ablation(
     """
     d = 2
     K = 1.0
+
+    if training_config is None:
+        training_config = TrainingConfig(n_steps=n_steps, lbfgs_finetune=False)
+
     config = ExperimentConfig(
         name=f"ablation_{name}",
         market=MarketConfig(
@@ -71,7 +78,7 @@ def run_ablation(
         ),
         model=model_config,
         sampler=sampler_config,
-        training=TrainingConfig(n_steps=n_steps, lbfgs_finetune=False),
+        training=training_config,
         output_dir=f"results/ablations/{name}",
     )
 
@@ -92,62 +99,103 @@ def run_ablation(
         dgm_prices = model(t_t, x_t).cpu().numpy().ravel()
 
     rel_l2 = relative_l2_error(dgm_prices, mc_prices)
-    return {"name": name, "rel_l2_error": rel_l2, "train_time": results["train_time_seconds"]}
+    final_loss = results.get("final_loss", None)
+
+    return {
+        "name": name,
+        "rel_l2_error": rel_l2,
+        "final_loss": float(final_loss) if final_loss is not None else None,
+        "train_time": results["train_time_seconds"],
+    }
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--n_steps", type=int, default=50_000)
+    parser.add_argument("--skip_existing", action="store_true",
+                        help="Skip ablations that already have results")
     args = parser.parse_args()
+
+    seed_everything(42)
+
+    # Define all ablation configurations
+    ablations = [
+        # 1. Baseline: DGM + tanh (hard constraint, risk-neutral sampling)
+        ("dgm_tanh", {
+            "model": ModelConfig(architecture="dgm", activation="tanh"),
+        }),
+        # 2. Architecture: MLP + tanh
+        ("mlp_tanh", {
+            "model": ModelConfig(architecture="mlp", activation="tanh"),
+        }),
+        # 3. Activation: DGM + softplus
+        ("dgm_softplus", {
+            "model": ModelConfig(architecture="dgm", activation="softplus"),
+        }),
+        # 4. Constraint: DGM + tanh + soft terminal constraint
+        ("soft_constraint", {
+            "model": ModelConfig(
+                architecture="dgm", activation="tanh",
+                use_hard_terminal_constraint=False,
+            ),
+            "training": TrainingConfig(
+                n_steps=args.n_steps, lbfgs_finetune=False,
+                lambda_terminal=10.0,
+            ),
+        }),
+        # 5. Sampling: uniform
+        ("uniform_sampling", {
+            "model": ModelConfig(architecture="dgm", activation="tanh"),
+            "sampler": SamplerConfig(sampler_type="uniform"),
+        }),
+        # 6. Sampling: risk-neutral (same as baseline, for completeness)
+        ("risk_neutral_sampling", {
+            "model": ModelConfig(architecture="dgm", activation="tanh"),
+            "sampler": SamplerConfig(sampler_type="risk_neutral"),
+        }),
+        # 7. Sampling: adaptive
+        ("adaptive_sampling", {
+            "model": ModelConfig(architecture="dgm", activation="tanh"),
+            "sampler": SamplerConfig(sampler_type="adaptive"),
+        }),
+    ]
 
     all_results = {}
 
-    print("Ablation: DGM (tanh)")
-    all_results["dgm_tanh"] = run_ablation(
-        "dgm_tanh",
-        ModelConfig(architecture="dgm", activation="tanh"),
-        n_steps=args.n_steps,
-    )
+    for name, cfg in ablations:
+        result_path = f"results/ablations/{name}/ablation_result.json"
+        if args.skip_existing and os.path.exists(result_path):
+            print(f"\nSkipping {name} (found existing results)")
+            import json
+            with open(result_path) as f:
+                all_results[name] = json.load(f)
+            continue
 
-    print("Ablation: DGM (softplus)")
-    all_results["dgm_softplus"] = run_ablation(
-        "dgm_softplus",
-        ModelConfig(architecture="dgm", activation="softplus"),
-        n_steps=args.n_steps,
-    )
+        print(f"\n{'='*50}")
+        print(f"Ablation: {name}")
+        print(f"{'='*50}")
 
-    print("Ablation: MLP (tanh)")
-    all_results["mlp_tanh"] = run_ablation(
-        "mlp_tanh",
-        ModelConfig(architecture="mlp", activation="tanh"),
-        n_steps=args.n_steps,
-    )
-
-    print("Ablation: Adaptive sampling")
-    all_results["adaptive"] = run_ablation(
-        "adaptive",
-        ModelConfig(architecture="dgm", activation="tanh"),
-        sampler_config=SamplerConfig(sampler_type="adaptive"),
-        n_steps=args.n_steps,
-    )
+        result = run_ablation(
+            name,
+            model_config=cfg["model"],
+            sampler_config=cfg.get("sampler", SamplerConfig()),
+            training_config=cfg.get("training", None),
+            n_steps=args.n_steps,
+        )
+        all_results[name] = result
+        # Save individual result
+        save_json(result, result_path)
 
     save_json(all_results, "results/ablations/ablation_summary.json")
 
-    arch_results = {
-        "DGM": all_results["dgm_tanh"]["rel_l2_error"],
-        "MLP": all_results["mlp_tanh"]["rel_l2_error"],
-    }
-    plot_dgm_ablation_architecture(arch_results, "results/ablations")
-
-    act_results = {
-        "tanh": all_results["dgm_tanh"]["rel_l2_error"],
-        "softplus": all_results["dgm_softplus"]["rel_l2_error"],
-    }
-    plot_dgm_ablation_activation(act_results, "results/ablations")
-
-    print("\nAblation Summary:")
+    print("\n" + "=" * 50)
+    print("Ablation Summary")
+    print("=" * 50)
+    print(f"{'Name':<25s} {'Rel L2 Error':>14s} {'Final Loss':>14s} {'Time (s)':>10s}")
     for name, r in all_results.items():
-        print(f"  {name}: error={r['rel_l2_error']:.4%}, time={r['train_time']:.1f}s")
+        err_str = f"{r['rel_l2_error']:.4%}" if r['rel_l2_error'] is not None else "NaN"
+        loss_str = f"{r['final_loss']:.2e}" if r.get('final_loss') is not None else "NaN"
+        print(f"{name:<25s} {err_str:>14s} {loss_str:>14s} {r['train_time']:10.1f}")
 
 
 if __name__ == "__main__":

@@ -30,7 +30,7 @@ from utils.math_utils import build_equicorrelation_matrix
 from utils.random import seed_everything
 
 
-def run_single_d(d: int, n_steps: int = 100_000) -> dict:
+def run_single_d(d: int, n_steps: int = 100_000, lbfgs_steps: int = 300) -> dict:
     """Train and evaluate DGM for a given dimension.
 
     Parameters
@@ -39,6 +39,8 @@ def run_single_d(d: int, n_steps: int = 100_000) -> dict:
         Number of assets.
     n_steps : int
         Training steps.
+    lbfgs_steps : int
+        L-BFGS fine-tuning steps.
 
     Returns
     -------
@@ -68,7 +70,7 @@ def run_single_d(d: int, n_steps: int = 100_000) -> dict:
             use_hard_terminal_constraint=True,
         ),
         training=TrainingConfig(
-            n_steps=n_steps, lbfgs_finetune=True, lbfgs_steps=300,
+            n_steps=n_steps, lbfgs_finetune=True, lbfgs_steps=lbfgs_steps,
         ),
         output_dir=f"results/scaling/d_{d}",
     )
@@ -121,15 +123,26 @@ def run_single_d(d: int, n_steps: int = 100_000) -> dict:
         "max_error": max_err,
         "train_time_seconds": results["train_time_seconds"],
         "n_params": n_params,
+        "n_steps": n_steps,
+        "lbfgs_steps": lbfgs_steps,
     }
     save_json(result, f"results/scaling/d_{d}/result.json")
+
+    # Save convergence history for plotting
+    if "loss_history" in results:
+        save_json(results["loss_history"], f"results/scaling/d_{d}/loss_history.json")
+    if "eval_history" in results:
+        save_json(results["eval_history"], f"results/scaling/d_{d}/eval_history.json")
+
     return result
 
 
 def main():
     parser = argparse.ArgumentParser(description="Run DGM scaling study")
     parser.add_argument("--dims", type=int, nargs="+", default=[1, 2, 3, 5, 7, 10])
-    parser.add_argument("--n_steps", type=int, default=100_000)
+    parser.add_argument("--n_steps", type=int, default=None,
+                        help="Training steps (default: 50k for d<=5, 30k for d>5)")
+    parser.add_argument("--lbfgs_steps", type=int, default=300)
     args = parser.parse_args()
 
     all_results = {}
@@ -141,7 +154,8 @@ def main():
             with open(result_path, "r") as f:
                 all_results[d] = json.load(f)
         else:
-            all_results[d] = run_single_d(d, args.n_steps)
+            steps = args.n_steps if args.n_steps else (30_000 if d > 5 else 50_000)
+            all_results[d] = run_single_d(d, steps, args.lbfgs_steps)
 
     save_json(all_results, "results/scaling/scaling_summary.json")
 
