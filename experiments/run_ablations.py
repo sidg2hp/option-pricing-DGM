@@ -5,6 +5,7 @@ Expanded from 4 to 7 ablations for paper-ready results.
 """
 
 import argparse
+import json
 import sys
 import os
 
@@ -164,10 +165,11 @@ def main():
 
     for name, cfg in ablations:
         result_path = f"results/ablations/{name}/ablation_result.json"
-        if args.skip_existing and os.path.exists(result_path):
+        legacy_path = f"results/ablations/{name}/ablation_{name}/results.json"
+        if args.skip_existing and (os.path.exists(result_path) or os.path.exists(legacy_path)):
             print(f"\nSkipping {name} (found existing results)")
-            import json
-            with open(result_path) as f:
+            existing = result_path if os.path.exists(result_path) else legacy_path
+            with open(existing) as f:
                 all_results[name] = json.load(f)
             continue
 
@@ -193,9 +195,10 @@ def main():
     print("=" * 50)
     print(f"{'Name':<25s} {'Rel L2 Error':>14s} {'Final Loss':>14s} {'Time (s)':>10s}")
     for name, r in all_results.items():
-        err_str = f"{r['rel_l2_error']:.4%}" if r['rel_l2_error'] is not None else "NaN"
-        loss_str = f"{r['final_loss']:.2e}" if r.get('final_loss') is not None else "NaN"
-        print(f"{name:<25s} {err_str:>14s} {loss_str:>14s} {r['train_time']:10.1f}")
+        err_str = f"{r['rel_l2_error']:.4%}" if r.get('rel_l2_error') is not None else "NaN"
+        loss_str = f"{r['final_loss']:.2e}" if r.get('final_loss') is not None else "N/A"
+        t = r.get('train_time', r.get('train_time_seconds', 0))
+        print(f"{name:<25s} {err_str:>14s} {loss_str:>14s} {t:10.1f}")
 
 
 if __name__ == "__main__":

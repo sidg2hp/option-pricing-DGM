@@ -1,0 +1,9 @@
+{
+  "d": 5,
+  "rel_l2_error": 0.11025520936609232,
+  "max_error": 0.13611343714628793,
+  "train_time_seconds": 10552.795417547226,
+  "n_params": 4255745,
+  "n_steps": 50000,
+  "lbfgs_steps": 300
+}

@@ -52,7 +52,7 @@
     "domain_std_multiplier": 4.0
   },
   "training": {
-    "n_steps": 100000,
+    "n_steps": 50000,
     "optimizer": "adam",
     "lr_init": 0.001,
     "lr_min": 1e-05,

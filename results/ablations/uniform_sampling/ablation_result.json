@@ -1,0 +1,6 @@
+{
+  "name": "uniform_sampling",
+  "rel_l2_error": 0.051358864742600346,
+  "final_loss": 0.0002051787741947919,
+  "train_time": 14086.995914697647
+}

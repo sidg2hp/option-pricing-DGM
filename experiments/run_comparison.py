@@ -101,6 +101,7 @@ def run_comparison_for_d(
     )
 
     model = build_model(config, payoff_fn)
+    model.to(device)
 
     # Try to load from scaling study
     loaded = False
@@ -109,7 +110,9 @@ def run_comparison_for_d(
         ckpt_path = os.path.join(scaling_dir, "checkpoints", ckpt_name)
         if os.path.exists(ckpt_path):
             print(f"  Found pre-trained model: {ckpt_path}")
-            model.load_state_dict(torch.load(ckpt_path, map_location=device))
+            ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
+            sd = ckpt["state_dict"] if isinstance(ckpt, dict) and "state_dict" in ckpt else ckpt
+            model.load_state_dict(sd)
             loaded = True
             break
 
@@ -179,7 +182,13 @@ def main():
         print(f"Three-way comparison: d = {d}")
         print(f"{'='*60}")
 
-        all_results[str(d)] = run_comparison_for_d(d, args.model_base, args.n_dgm_steps)
+        result_path = f"results/paper/comparison/d_{d}/comparison_results.json"
+        if os.path.exists(result_path):
+            print(f"  Skipping d={d} (found existing results)")
+            with open(result_path) as f:
+                all_results[str(d)] = json.load(f)
+        else:
+            all_results[str(d)] = run_comparison_for_d(d, args.model_base, args.n_dgm_steps)
 
     os.makedirs("results/paper", exist_ok=True)
     save_json(all_results, "results/paper/comparison_summary.json")

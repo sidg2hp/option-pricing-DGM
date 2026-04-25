@@ -15,7 +15,7 @@ import json
 import numpy as np
 import torch
 
-from configs.base_config import ExperimentConfig, MarketConfig, TrainingConfig
+from configs.base_config import ExperimentConfig, MarketConfig, ModelConfig, TrainingConfig
 from evaluation.monte_carlo import MonteCarloPricer
 from models.model_factory import build_model
 from pde.payoffs import get_payoff_fn
@@ -56,12 +56,24 @@ def run_hybrid_mc_for_d(
     out_dir = f"results/hybrid_mc/d_{d}"
     os.makedirs(out_dir, exist_ok=True)
 
+    # Skip if results already exist
+    result_path = f"{out_dir}/hybrid_mc_results.json"
+    if os.path.exists(result_path):
+        print(f"  Skipping d={d} (found existing results)")
+        with open(result_path) as f:
+            return json.load(f)
+
+    hidden = 512 if d >= 5 else 256
+
     config = ExperimentConfig(
         name=f"hybrid_mc_d{d}",
         market=MarketConfig(
             d=d, r=r, T=T, K=K,
             sigma=sigma_list, rho=rho_mat, S0=[1.0] * d,
             payoff_type="basket_call",
+        ),
+        model=ModelConfig(
+            architecture="dgm", hidden_size=hidden, num_dgm_layers=4,
         ),
         training=TrainingConfig(n_steps=n_steps, lbfgs_finetune=True, lbfgs_steps=200),
         output_dir=out_dir,
@@ -71,6 +83,7 @@ def run_hybrid_mc_for_d(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     model = build_model(config, payoff_fn)
+    model.to(device)
 
     # Try to load pre-trained model
     loaded = False
@@ -80,7 +93,9 @@ def run_hybrid_mc_for_d(
             ckpt_path = os.path.join(model_dir, "checkpoints", "latest_model.pt")
         if os.path.exists(ckpt_path):
             print(f"  Loading pre-trained model from {ckpt_path}")
-            model.load_state_dict(torch.load(ckpt_path, map_location=device))
+            ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
+            sd = ckpt["state_dict"] if isinstance(ckpt, dict) and "state_dict" in ckpt else ckpt
+            model.load_state_dict(sd)
             loaded = True
 
     if not loaded:
