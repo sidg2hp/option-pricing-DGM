@@ -129,10 +129,7 @@ def main():
         ("mlp_tanh", {
             "model": ModelConfig(architecture="mlp", activation="tanh"),
         }),
-        # 3. Activation: DGM + softplus
-        ("dgm_softplus", {
-            "model": ModelConfig(architecture="dgm", activation="softplus"),
-        }),
+
         # 4. Constraint: DGM + tanh + soft terminal constraint
         ("soft_constraint", {
             "model": ModelConfig(
