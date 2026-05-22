@@ -17,7 +17,7 @@ import torch
 
 from baselines.zhou_et_al import ZhouEtAlPricer
 from configs.base_config import ExperimentConfig, MarketConfig, ModelConfig, TrainingConfig
-from evaluation.monte_carlo import MonteCarloPricer
+from evaluation.monte_carlo import MonteCarloPricer, HybridMCControlVariate
 from models.model_factory import build_model
 from pde.payoffs import get_payoff_fn
 from training.trainer import DGMTrainer
@@ -93,7 +93,7 @@ def run_comparison_for_d(
         ),
         model=ModelConfig(
             architecture="dgm",
-            hidden_size=512 if d >= 5 else 256,
+            hidden_size=512,
             num_dgm_layers=4,
         ),
         training=TrainingConfig(n_steps=n_dgm_steps, lbfgs_finetune=True, lbfgs_steps=300),
@@ -139,6 +139,21 @@ def run_comparison_for_d(
     zhou = ZhouEtAlPricer(config.market, zhou_payoff, seed=42)
     zhou.train(n_samples=100_000, n_epochs=200)
     zhou_prices = zhou.predict(S0_test)
+    
+    # --- 4. Hybrid MC (Control Variates) ---
+    print(f"  Computing Hybrid MC reference (100k paths)...")
+    cv_pricer = HybridMCControlVariate(model, device)
+    cv_prices = []
+    cv_errors = []
+    for i, s0 in enumerate(S0_test):
+        res = cv_pricer.price_with_cv(
+            S0=s0, payoff_fn=payoff_fn, r=r, sigma=np.array(sigma_list), rho=np.array(rho_mat), T=T, K=K,
+            n_paths=100_000, seed=i
+        )
+        cv_prices.append(res["cv_price"])
+        cv_errors.append(res["cv_se"])
+    cv_prices = np.array(cv_prices)
+    cv_errors = np.array(cv_errors)
 
     # --- Compute errors ---
     dgm_rel_errors = np.abs(dgm_prices - mc_prices) / mc_prices
@@ -151,6 +166,8 @@ def run_comparison_for_d(
         "zhou_prices": zhou_prices.tolist(),
         "mc_prices": mc_prices.tolist(),
         "mc_errors": mc_errors.tolist(),
+        "cv_prices": cv_prices.tolist(),
+        "cv_errors": cv_errors.tolist(),
         "dgm_mean_rel_error": float(np.mean(dgm_rel_errors)),
         "zhou_mean_rel_error": float(np.mean(zhou_rel_errors)),
     }
@@ -158,10 +175,10 @@ def run_comparison_for_d(
     save_json(result, f"{out_dir}/comparison_results.json")
 
     # Print comparison
-    print(f"\n  {'S0':>6s} {'DGM':>10s} {'Zhou':>10s} {'MC':>10s} {'MC SE':>10s}")
+    print(f"\n  {'S0':>6s} {'DGM':>10s} {'Zhou':>10s} {'MC':>10s} {'MC SE':>10s} {'Hybrid MC':>10s} {'HMC SE':>10s}")
     for i in range(len(S0_test_values)):
         print(f"  {S0_test_values[i]:6.2f} {dgm_prices[i]:10.4f} "
-              f"{zhou_prices[i]:10.4f} {mc_prices[i]:10.4f} {mc_errors[i]:10.6f}")
+              f"{zhou_prices[i]:10.4f} {mc_prices[i]:10.4f} {mc_errors[i]:10.6f} {cv_prices[i]:10.4f} {cv_errors[i]:10.6f}")
 
     return result
 
@@ -194,14 +211,16 @@ def main():
     save_json(all_results, "results/paper/comparison_summary.json")
 
     # Print summary table
-    print("\n" + "=" * 60)
-    print("Summary: Mean relative error vs MC")
-    print("=" * 60)
-    print(f"{'d':>4s} {'DGM':>12s} {'Zhou':>12s}")
+    print("\n" + "=" * 80)
+    print("Summary: Mean relative error vs MC & Hybrid MC SE")
+    print("=" * 80)
+    print(f"{'d':>4s} {'DGM (Err)':>12s} {'Zhou (Err)':>12s} {'MC SE':>12s} {'HMC SE':>12s}")
     for d_str in sorted(all_results.keys(), key=int):
         r = all_results[d_str]
+        mean_mc_se = np.mean(r['mc_errors'])
+        mean_cv_se = np.mean(r['cv_errors'])
         print(f"{r['d']:4d} {r['dgm_mean_rel_error']:12.4%} "
-              f"{r['zhou_mean_rel_error']:12.4%}")
+              f"{r['zhou_mean_rel_error']:12.4%} {mean_mc_se:12.6f} {mean_cv_se:12.6f}")
 
 
 if __name__ == "__main__":

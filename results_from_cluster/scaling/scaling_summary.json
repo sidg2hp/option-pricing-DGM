@@ -1,0 +1,20 @@
+{
+  "7": {
+    "d": 7,
+    "rel_l2_error": NaN,
+    "max_error": NaN,
+    "train_time_seconds": 21104.683361530304,
+    "n_params": 4273153,
+    "n_steps": 50000,
+    "lbfgs_steps": 300
+  },
+  "10": {
+    "d": 10,
+    "rel_l2_error": 0.3713006286201858,
+    "max_error": 0.26619622709801277,
+    "train_time_seconds": 19792.280017137527,
+    "n_params": 4299265,
+    "n_steps": 50000,
+    "lbfgs_steps": 300
+  }
+}

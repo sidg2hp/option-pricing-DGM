@@ -282,8 +282,19 @@ class DGMTrainer:
             tc.n_steps, self.device, self.config.market.d,
         )
         start_time = time.time()
+        start_step = 0
 
-        for step in tqdm(range(tc.n_steps), desc="DGM Training", disable=False):
+        latest_ckpt_path = self.output_dir / "checkpoints" / "latest_model.pt"
+        if latest_ckpt_path.exists():
+            try:
+                ckpt = torch.load(latest_ckpt_path, map_location=self.device, weights_only=False)
+                self.model.load_state_dict(ckpt["state_dict"])
+                start_step = ckpt.get("step", 0) + 1
+                logger.info(f"Resuming training from step {start_step} using {latest_ckpt_path}")
+            except Exception as e:
+                logger.warning(f"Failed to load latest_model.pt: {e}")
+
+        for step in tqdm(range(start_step, tc.n_steps), desc="DGM Training", disable=False):
             loss_dict = self._training_step(step)
 
             if step % tc.log_every == 0:

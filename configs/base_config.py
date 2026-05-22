@@ -76,7 +76,7 @@ class ModelConfig:
     """
 
     architecture: str = "dgm"
-    hidden_size: int = 256
+    hidden_size: int = 512
     num_dgm_layers: int = 4
     activation: str = "tanh"
     use_hard_terminal_constraint: bool = True
@@ -105,9 +105,9 @@ class SamplerConfig:
     """
 
     sampler_type: str = "risk_neutral"
-    n_interior: int = 4096
-    n_terminal: int = 1024
-    n_boundary: int = 512
+    n_interior: int = 1024
+    n_terminal: int = 256
+    n_boundary: int = 128
     domain_std_multiplier: float = 4.0
 
 

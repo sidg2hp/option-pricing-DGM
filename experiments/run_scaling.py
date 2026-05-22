@@ -55,7 +55,11 @@ def run_single_d(d: int, n_steps: int = 100_000, lbfgs_steps: int = 300) -> dict
     rho_mat = build_equicorrelation_matrix(d, 0.3).tolist()
     S0_list = [1.0] * d
 
-    hidden = 512 if d >= 5 else 256
+    hidden = 512
+
+    sampler_cfg = SamplerConfig()
+    # Keeping default batch sizes (1024) to prevent CUDA OOM on 16GB V100
+    # The performance gain will come entirely from the 3x longer training.
 
     config = ExperimentConfig(
         name=f"scaling_d{d}",
@@ -69,6 +73,7 @@ def run_single_d(d: int, n_steps: int = 100_000, lbfgs_steps: int = 300) -> dict
             num_dgm_layers=4, activation="tanh",
             use_hard_terminal_constraint=True,
         ),
+        sampler=sampler_cfg,
         training=TrainingConfig(
             n_steps=n_steps, lbfgs_finetune=True, lbfgs_steps=lbfgs_steps,
         ),
@@ -102,7 +107,15 @@ def run_single_d(d: int, n_steps: int = 100_000, lbfgs_steps: int = 300) -> dict
     print(f"Model parameters: {n_params:,}")
 
     trainer = DGMTrainer(model, config, payoff_fn, payoff_unclipped_fn, mc_reference)
+    
+    best_ckpt = os.path.join(trainer.output_dir, "checkpoints", "best_model.pt")
+    
     results = trainer.train()
+    
+    if os.path.exists(best_ckpt):
+        print("  Loading best_model.pt for evaluation...")
+        ckpt = torch.load(best_ckpt, map_location=device, weights_only=False)
+        model.load_state_dict(ckpt["state_dict"])
 
     x_test = np.log(S_test)
     x_t = torch.tensor(x_test, dtype=torch.float32, device=device)
@@ -154,7 +167,14 @@ def main():
             with open(result_path, "r") as f:
                 all_results[d] = json.load(f)
         else:
-            steps = args.n_steps if args.n_steps else (30_000 if d > 5 else 50_000)
+            if d >= 7:
+                steps = 150_000
+            elif args.n_steps:
+                steps = args.n_steps
+            elif d > 5:
+                steps = 50_000
+            else:
+                steps = 50_000
             all_results[d] = run_single_d(d, steps, args.lbfgs_steps)
 
     save_json(all_results, "results/scaling/scaling_summary.json")

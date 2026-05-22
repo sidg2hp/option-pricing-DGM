@@ -59,17 +59,39 @@ class CheckpointSaver:
         """
         if self.best_metric is None or metric < self.best_metric:
             self.best_metric = metric
-            path = self.save_dir / "best_model.pt"
-            torch.save(
-                {"step": step, "metric": metric, "state_dict": model.state_dict()},
-                path,
-            )
+            try:
+                self.save_dir.mkdir(parents=True, exist_ok=True)
+                path = self.save_dir.absolute() / "best_model.pt"
+                torch.save(
+                    {"step": step, "metric": metric, "state_dict": model.state_dict()},
+                    str(path),
+                )
+            except Exception:
+                import time
+                time.sleep(5)  # Wait for NFS metadata sync
+                self.save_dir.mkdir(parents=True, exist_ok=True)
+                path = self.save_dir.absolute() / "best_model.pt"
+                torch.save(
+                    {"step": step, "metric": metric, "state_dict": model.state_dict()},
+                    str(path),
+                )
             return True
         return False
 
     def save_latest(self, model: nn.Module, step: int) -> None:
-        path = self.save_dir / "latest_model.pt"
-        torch.save(
-            {"step": step, "state_dict": model.state_dict()},
-            path,
-        )
+        try:
+            self.save_dir.mkdir(parents=True, exist_ok=True)
+            path = self.save_dir.absolute() / "latest_model.pt"
+            torch.save(
+                {"step": step, "state_dict": model.state_dict()},
+                str(path),
+            )
+        except Exception:
+            import time
+            time.sleep(5)
+            self.save_dir.mkdir(parents=True, exist_ok=True)
+            path = self.save_dir.absolute() / "latest_model.pt"
+            torch.save(
+                {"step": step, "state_dict": model.state_dict()},
+                str(path),
+            )

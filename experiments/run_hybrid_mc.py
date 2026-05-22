@@ -16,7 +16,7 @@ import numpy as np
 import torch
 
 from configs.base_config import ExperimentConfig, MarketConfig, ModelConfig, TrainingConfig
-from evaluation.monte_carlo import MonteCarloPricer
+from evaluation.monte_carlo import MonteCarloPricer, HybridMCControlVariate
 from models.model_factory import build_model
 from pde.payoffs import get_payoff_fn
 from training.trainer import DGMTrainer
@@ -63,7 +63,7 @@ def run_hybrid_mc_for_d(
         with open(result_path) as f:
             return json.load(f)
 
-    hidden = 512 if d >= 5 else 256
+    hidden = 512
 
     config = ExperimentConfig(
         name=f"hybrid_mc_d{d}",
@@ -105,42 +105,23 @@ def run_hybrid_mc_for_d(
 
     model.eval()
 
-    # Monte Carlo simulation
+    # Use the new control variate estimator
     sigma_np = np.array(sigma_list)
     rho_np = np.array(rho_mat)
-    L = validate_correlation_matrix(rho_np)
     S0 = np.array([1.0] * d)
+    
+    cv_pricer = HybridMCControlVariate(model, device)
+    cv_results = cv_pricer.price_with_cv(
+        S0=S0, payoff_fn=payoff_fn, r=r, sigma=sigma_np, rho=rho_np, T=T, K=K,
+        n_paths=n_mc, seed=42
+    )
 
-    rng = np.random.RandomState(42)
-    eps = rng.randn(n_mc, d)
-    Z = eps @ L.T
-    drift = (r - 0.5 * sigma_np**2) * T
-    S_T = S0 * np.exp(drift + sigma_np * np.sqrt(T) * Z)
-
-    payoffs = np.maximum(S_T.mean(axis=1) - K, 0.0)
-    discounted = np.exp(-r * T) * payoffs
-
-    # DGM predictions at terminal paths
-    x_T = np.log(S_T / K)
-    x_t = torch.tensor(x_T, dtype=torch.float32, device=device)
-    t_t = torch.full((n_mc, 1), T * 0.999, dtype=torch.float32, device=device)
-    with torch.no_grad():
-        dgm_at_paths = model(t_t, x_t).cpu().numpy().ravel()
-
-    # Control variate computation
-    dgm_mean = dgm_at_paths.mean()
-    cov_XY = np.cov(discounted, dgm_at_paths)[0, 1]
-    var_Y = np.var(dgm_at_paths)
-    c_star = -cov_XY / var_Y if var_Y > 1e-15 else 0.0
-
-    cv_estimate = discounted + c_star * (dgm_at_paths - dgm_mean)
-
-    vanilla_price = np.mean(discounted)
-    vanilla_se = np.std(discounted) / np.sqrt(n_mc)
-    cv_price = np.mean(cv_estimate)
-    cv_se = np.std(cv_estimate) / np.sqrt(n_mc)
-
-    variance_reduction = 1 - (cv_se / vanilla_se)**2 if vanilla_se > 0 else 0
+    vanilla_price = cv_results["vanilla_price"]
+    vanilla_se = cv_results["vanilla_se"]
+    cv_price = cv_results["cv_price"]
+    cv_se = cv_results["cv_se"]
+    variance_reduction = cv_results["variance_reduction"]
+    c_star = cv_results["c_star"]
 
     print(f"  d={d}: Vanilla SE={vanilla_se:.6f}, CV SE={cv_se:.6f}, "
           f"VR={variance_reduction:.2%}, c*={c_star:.4f}")
