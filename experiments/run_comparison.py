@@ -94,7 +94,7 @@ def run_comparison_for_d(
             payoff_type="basket_call",
         ),
         model=ModelConfig(
-            architecture="dgm" if model_base == "dgm" else "mlp",
+            architecture="dgm",
             hidden_size=512,
             num_dgm_layers=4,
             use_hard_terminal_constraint=True,
@@ -114,8 +114,11 @@ def run_comparison_for_d(
         import json
         with open(config_path, "r") as f:
             saved_cfg = json.load(f)
-        if "model" in saved_cfg and "hidden_size" in saved_cfg["model"]:
-            config.model.hidden_size = saved_cfg["model"]["hidden_size"]
+        if "model" in saved_cfg:
+            if "hidden_size" in saved_cfg["model"]:
+                config.model.hidden_size = saved_cfg["model"]["hidden_size"]
+            if "architecture" in saved_cfg["model"]:
+                config.model.architecture = saved_cfg["model"]["architecture"]
 
     model = build_model(config, payoff_fn)
     model.to(device)
