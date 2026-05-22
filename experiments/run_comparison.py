@@ -84,29 +84,45 @@ def run_comparison_for_d(
 
     # --- 2. DGM ---
     print(f"  Loading/training DGM model...")
+    # Build default config
     config = ExperimentConfig(
         name=f"comparison_dgm_d{d}",
         market=MarketConfig(
             d=d, r=r, T=T, K=K,
-            sigma=sigma_list, rho=rho_mat, S0=[1.0] * d,
+            sigma=sigma_list, rho=rho_mat,
+            S0=[1.0]*d,
             payoff_type="basket_call",
         ),
         model=ModelConfig(
-            architecture="dgm",
+            architecture="dgm" if model_base == "dgm" else "mlp",
             hidden_size=512,
             num_dgm_layers=4,
+            use_hard_terminal_constraint=True,
         ),
-        training=TrainingConfig(n_steps=n_dgm_steps, lbfgs_finetune=True, lbfgs_steps=300),
+        training=TrainingConfig(n_steps=n_dgm_steps),
         output_dir=out_dir,
     )
+
+    model = None
+    loaded = False
+
+    scaling_dir = f"results/scaling/d_{d}/scaling_d{d}"
+    
+    # Try to load the original config to ensure model architecture matches exactly
+    config_path = os.path.join(scaling_dir, "config.json")
+    if os.path.exists(config_path):
+        import json
+        with open(config_path, "r") as f:
+            saved_cfg = json.load(f)
+        if "model" in saved_cfg and "hidden_size" in saved_cfg["model"]:
+            config.model.hidden_size = saved_cfg["model"]["hidden_size"]
 
     model = build_model(config, payoff_fn)
     model.to(device)
 
-    # Try to load from scaling study
-    loaded = False
-    scaling_dir = os.path.join(model_base, f"d_{d}", f"scaling_d{d}")
-    for ckpt_name in ["best_model.pt", "latest_model.pt"]:
+    # Try to load pre-trained DGM weights
+    ckpt_names = ["best_model.pt", "latest_model.pt"]
+    for ckpt_name in ckpt_names:
         ckpt_path = os.path.join(scaling_dir, "checkpoints", ckpt_name)
         if os.path.exists(ckpt_path):
             print(f"  Found pre-trained model: {ckpt_path}")
