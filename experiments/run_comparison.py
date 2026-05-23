@@ -176,7 +176,7 @@ def run_comparison_for_d(
     cv_errors = []
     for i, s0 in enumerate(S0_test):
         res = cv_pricer.price_with_cv(
-            S0=s0, payoff_fn=payoff_fn, r=r, sigma=np.array(sigma_list), rho=np.array(rho_mat), T=T, K=K,
+            S0=s0, payoff_fn=mc_payoff, r=r, sigma=np.array(sigma_list), rho=np.array(rho_mat), T=T, K=K,
             n_paths=100_000, seed=i
         )
         cv_prices.append(res["cv_price"])
