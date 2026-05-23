@@ -55,7 +55,8 @@ def run_single_d(d: int, n_steps: int = 100_000, lbfgs_steps: int = 300) -> dict
     rho_mat = build_equicorrelation_matrix(d, 0.3).tolist()
     S0_list = [1.0] * d
 
-    hidden = 512
+    # Use 256 for d<=5, 512 for d>=7 (matching original training configs)
+    hidden = 512 if d >= 7 else 256
 
     sampler_cfg = SamplerConfig()
     # Keeping default batch sizes (1024) to prevent CUDA OOM on 16GB V100
@@ -156,17 +157,27 @@ def main():
     parser.add_argument("--n_steps", type=int, default=None,
                         help="Training steps (default: 50k for d<=5, 30k for d>5)")
     parser.add_argument("--lbfgs_steps", type=int, default=300)
+    parser.add_argument("--force", action="store_true",
+                        help="Re-run even if results exist (use to replace stale/NaN results)")
     args = parser.parse_args()
 
     all_results = {}
     for d in args.dims:
         result_path = f"results/scaling/d_{d}/result.json"
-        if os.path.exists(result_path):
-            print(f"\nSkipping d={d} (found existing results at {result_path})")
-            import json
+        skip = False
+        if os.path.exists(result_path) and not args.force:
+            import json, math
             with open(result_path, "r") as f:
-                all_results[d] = json.load(f)
-        else:
+                existing = json.load(f)
+            # Only skip if the result is valid (not NaN)
+            err = existing.get("rel_l2_error")
+            if err is not None and not (isinstance(err, float) and math.isnan(err)):
+                print(f"\nSkipping d={d} (found valid results: error={err:.4%})")
+                all_results[d] = existing
+                skip = True
+            else:
+                print(f"\nRe-running d={d} (existing result has NaN or missing error)")
+        if not skip:
             if d >= 7:
                 steps = 150_000
             elif args.n_steps:
