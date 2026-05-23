@@ -155,50 +155,73 @@ def main():
     parser = argparse.ArgumentParser(description="Run DGM scaling study")
     parser.add_argument("--dims", type=int, nargs="+", default=[1, 2, 3, 5, 7, 10])
     parser.add_argument("--n_steps", type=int, default=None,
-                        help="Training steps (default: 50k for d<=5, 30k for d>5)")
+                        help="Training steps (default: 50k for d<=5, 150k for d>=7)")
     parser.add_argument("--lbfgs_steps", type=int, default=300)
-    parser.add_argument("--force", action="store_true",
-                        help="Re-run even if results exist (use to replace stale/NaN results)")
+    parser.add_argument("--clean", action="store_true",
+                        help="Delete old result.json files before running (fresh start)")
     args = parser.parse_args()
+
+    # Optionally clean old results (keeps checkpoints for auto-resume)
+    if args.clean:
+        import glob
+        for d in args.dims:
+            for pattern in [f"results/scaling/d_{d}/result.json",
+                            f"results/scaling/d_{d}/scaling_d{d}/result.json"]:
+                for f in glob.glob(pattern):
+                    os.remove(f)
+                    print(f"Deleted stale: {f}")
 
     all_results = {}
     for d in args.dims:
+        # Check both possible result locations
         result_path = f"results/scaling/d_{d}/result.json"
+        alt_path = f"results/scaling/d_{d}/scaling_d{d}/result.json"
+        
         skip = False
-        if os.path.exists(result_path) and not args.force:
-            import json, math
-            with open(result_path, "r") as f:
-                existing = json.load(f)
-            # Only skip if the result is valid (not NaN)
-            err = existing.get("rel_l2_error")
-            if err is not None and not (isinstance(err, float) and math.isnan(err)):
-                print(f"\nSkipping d={d} (found valid results: error={err:.4%})")
-                all_results[d] = existing
-                skip = True
-            else:
-                print(f"\nRe-running d={d} (existing result has NaN or missing error)")
+        for rp in [result_path, alt_path]:
+            if os.path.exists(rp):
+                import json, math
+                with open(rp, "r") as f:
+                    existing = json.load(f)
+                err = existing.get("rel_l2_error")
+                if err is not None and not (isinstance(err, float) and math.isnan(err)):
+                    print(f"\n[SKIP] d={d} (completed: error={err:.4%})")
+                    all_results[d] = existing
+                    skip = True
+                    break
+                else:
+                    print(f"\n[REDO] d={d} (found NaN/invalid result, will re-run)")
+                    os.remove(rp)
+        
         if not skip:
-            if d >= 7:
-                steps = 150_000
-            elif args.n_steps:
+            if args.n_steps:
                 steps = args.n_steps
-            elif d > 5:
-                steps = 50_000
+            elif d >= 7:
+                steps = 150_000
             else:
                 steps = 50_000
+            print(f"\n[RUN] d={d} ({steps} steps, auto-resume from checkpoint if available)")
             all_results[d] = run_single_d(d, steps, args.lbfgs_steps)
 
     save_json(all_results, "results/scaling/scaling_summary.json")
 
-    plot_scaling_error(all_results, "results/scaling")
-    plot_scaling_time(all_results, "results/scaling")
+    try:
+        plot_scaling_error(all_results, "results/scaling")
+        plot_scaling_time(all_results, "results/scaling")
+    except Exception as e:
+        print(f"Warning: plotting failed ({e}), results are still saved.")
 
     print("\n" + "=" * 60)
-    print("Scaling Study Complete")
+    print("Scaling Study Status")
     print("=" * 60)
     for d in sorted(all_results.keys()):
         r = all_results[d]
-        print(f"  d={d}: error={r['rel_l2_error']:.4%}, time={r['train_time_seconds']:.1f}s")
+        err = r.get('rel_l2_error', float('nan'))
+        t = r.get('train_time_seconds', 0)
+        if isinstance(err, float) and not (err != err):  # not NaN
+            print(f"  d={d}: error={err:.4%}, time={t:.1f}s  [DONE]")
+        else:
+            print(f"  d={d}: error=NaN, time={t:.1f}s  [INCOMPLETE]")
 
 
 if __name__ == "__main__":
