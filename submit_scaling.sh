@@ -15,6 +15,6 @@ cd $SLURM_SUBMIT_DIR
 source $HOME/miniconda3/bin/activate
 conda activate dgm_env
 
-echo "Starting Full Scaling Study for d=2, 3, 5, 7, 10"
-python experiments/run_scaling.py --dims 2 3 5 7 10 --force
+echo "Starting Full Scaling Study for d=1, 2, 3, 5, 7, 10"
+python experiments/run_scaling.py --dims 1 2 3 5 7 10 --force
 echo "Scaling Study Complete!"
