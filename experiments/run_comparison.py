@@ -131,6 +131,16 @@ def run_comparison_for_d(
             print(f"  Found pre-trained model: {ckpt_path}")
             ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
             sd = ckpt["state_dict"] if isinstance(ckpt, dict) and "state_dict" in ckpt else ckpt
+            
+            # Auto-detect hidden_size from weights to prevent shape mismatch
+            if "initial_layer.0.weight" in sd:
+                actual_hidden = sd["initial_layer.0.weight"].shape[0]
+                if actual_hidden != config.model.hidden_size:
+                    print(f"  Auto-adjusting hidden_size from {config.model.hidden_size} to {actual_hidden} to match checkpoint.")
+                    config.model.hidden_size = actual_hidden
+                    model = build_model(config, payoff_fn)
+                    model.to(device)
+            
             model.load_state_dict(sd)
             loaded = True
             break
