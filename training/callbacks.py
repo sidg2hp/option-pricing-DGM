@@ -47,8 +47,37 @@ class CheckpointSaver:
 
     def __init__(self, save_dir: str):
         self.save_dir = Path(save_dir)
-        self.save_dir.mkdir(parents=True, exist_ok=True)
+        self._ensure_dir()
         self.best_metric: Optional[float] = None
+
+    def _ensure_dir(self):
+        """Create save directory, ignoring filesystem errors."""
+        try:
+            self.save_dir.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass  # Directory might already exist or NFS is flaky
+
+    def _save_with_retry(self, path: Path, data: dict, max_retries: int = 5) -> bool:
+        """Save a checkpoint with multiple retries for HPC filesystem resilience."""
+        import time
+        import logging
+        logger = logging.getLogger(__name__)
+
+        for attempt in range(max_retries):
+            try:
+                self._ensure_dir()
+                torch.save(data, str(path))
+                return True
+            except Exception as e:
+                wait = 2 ** attempt  # 1, 2, 4, 8, 16 seconds
+                logger.warning(
+                    f"Checkpoint save failed (attempt {attempt+1}/{max_retries}): {e}. "
+                    f"Retrying in {wait}s..."
+                )
+                time.sleep(wait)
+
+        logger.error(f"Failed to save checkpoint after {max_retries} attempts. Continuing training...")
+        return False
 
     def __call__(
         self, model: nn.Module, metric: float, step: int
@@ -59,39 +88,17 @@ class CheckpointSaver:
         """
         if self.best_metric is None or metric < self.best_metric:
             self.best_metric = metric
-            try:
-                self.save_dir.mkdir(parents=True, exist_ok=True)
-                path = self.save_dir.absolute() / "best_model.pt"
-                torch.save(
-                    {"step": step, "metric": metric, "state_dict": model.state_dict()},
-                    str(path),
-                )
-            except Exception:
-                import time
-                time.sleep(5)  # Wait for NFS metadata sync
-                self.save_dir.mkdir(parents=True, exist_ok=True)
-                path = self.save_dir.absolute() / "best_model.pt"
-                torch.save(
-                    {"step": step, "metric": metric, "state_dict": model.state_dict()},
-                    str(path),
-                )
+            path = self.save_dir.absolute() / "best_model.pt"
+            self._save_with_retry(
+                path,
+                {"step": step, "metric": metric, "state_dict": model.state_dict()},
+            )
             return True
         return False
 
     def save_latest(self, model: nn.Module, step: int) -> None:
-        try:
-            self.save_dir.mkdir(parents=True, exist_ok=True)
-            path = self.save_dir.absolute() / "latest_model.pt"
-            torch.save(
-                {"step": step, "state_dict": model.state_dict()},
-                str(path),
-            )
-        except Exception:
-            import time
-            time.sleep(5)
-            self.save_dir.mkdir(parents=True, exist_ok=True)
-            path = self.save_dir.absolute() / "latest_model.pt"
-            torch.save(
-                {"step": step, "state_dict": model.state_dict()},
-                str(path),
-            )
+        path = self.save_dir.absolute() / "latest_model.pt"
+        self._save_with_retry(
+            path,
+            {"step": step, "state_dict": model.state_dict()},
+        )
