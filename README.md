@@ -239,7 +239,7 @@ $$\sigma_{\text{geo}} = \frac{1}{d}\sqrt{\sum_{i,j}\rho_{ij}\sigma_i\sigma_j}, \
 </p>
 <p align="center"><em>DGM-learned 2D geometric basket call price surface V(0, S₁, S₂).</em></p>
 
-### Three-Way Method Comparison (DGM vs Zhou vs MC)
+### Four-Way Method Comparison (DGM vs Zhou vs Hybrid MC vs MC)
 
 **Setup**: For each $d \in \{1, 2, 3, 5\}$: DGM (pre-trained), Zhou NN ($10^5$ training samples with 50-path MC labels, 200 epochs), MC reference ($10^6$ paths). Five test points $S_0/K \in \{0.8, 0.9, 1.0, 1.1, 1.2\}$ per dimension.
 
@@ -295,21 +295,19 @@ $$\sigma_{\text{geo}} = \frac{1}{d}\sqrt{\sum_{i,j}\rho_{ij}\sigma_i\sigma_j}, \
 **Analysis**: While the Zhou benchmark reports a lower *mean* relative error across the sample space, this aggregated metric is heavily skewed by Out-of-the-Money (OTM) points (e.g., $S_0=0.8$) tracking near-zero absolute prices. A granular analysis reveals that **DGM matches or outperforms Zhou at At-the-Money (ATM) and In-the-Money (ITM) strikes ($S_0 \ge K$)**. At $d=5$, $S_0=1.20$, DGM's absolute error ($1.9\times 10^{-4}$) is an order of magnitude smaller than Zhou's ($2.0\times 10^{-3}$). Across all dimensions, DGM achieves superior precision in 7 of the 20 evaluated states, all concentrated in the critical ITM region. Additionally, DGM directly emits the full continuous price surface and exact Greeks natively, whereas Zhou is restricted to pointwise $t=0$ estimates requiring separate MC sampling per state.
 
 <p align="center">
-  <img src="figures/fig2_dgm_vs_zhou.png" width="500" alt="DGM vs Zhou comparison"/>
+  <img src="figures/neurips/fig2_4way_comparison.png" width="500" alt="DGM vs Zhou comparison"/>
 </p>
-<p align="center"><em>Mean relative error vs MC: DGM (PDE) vs Zhou NN (regression) across dimensions.</em></p>
+<p align="center"><em>Mean relative error vs MC: Four-way comparison across dimensions.</em></p>
 
 <p align="center">
-  <img src="figures/zhou_fig1_price_surface_2d.png" width="450" alt="Zhou price surface"/>
-  <img src="figures/zhou_fig5_scatter_dgm_vs_mc.png" width="350" alt="DGM vs MC scatter"/>
-</p>
-<p align="center"><em>Left: DGM 2D price surface at t=0. Right: DGM vs MC scatter plot (5 test points).</em></p>
+  <img src="figures/neurips/fig3_price_comparison.png" width="800" alt="Zhou price surface"/>
+  </p>
+<p align="center"><em>Price comparison across dimensions.</em></p>
 
 <p align="center">
-  <img src="figures/zhou_fig2_training_loss.png" width="450" alt="Zhou training loss"/>
-  <img src="figures/zhou_fig3_price_table.png" width="350" alt="Price comparison table"/>
+  <img src="figures/neurips/fig4_scatter.png" width="800" alt="Scatter plots"/>
 </p>
-<p align="center"><em>Left: Training loss convergence over 200k steps (note log scale). Right: Price comparison table.</em></p>
+<p align="center"><em>Scatter plots: Predicted vs True MC Reference.</em></p>
 
 <p align="center">
   <img src="figures/zhou_fig7_delta_surface.png" width="500" alt="Delta surface"/>
@@ -337,23 +335,39 @@ $$\Delta_i = \frac{1}{S_i}\frac{\partial u}{\partial x_i}, \qquad \Gamma_i = \fr
 
 The higher gamma error relative to delta is expected: gamma involves second derivatives of the network, amplifying approximation errors. This is consistent with standard PINN behaviour for second-order quantities.
 
+### Error by Moneyness
+
+<p align="center">
+  <img src="figures/neurips/fig5_error_by_moneyness.png" width="500" alt="Error by moneyness"/>
+</p>
+<p align="center"><em>Pricing Error by Moneyness Region.</em></p>
+
 ### Dimensional Scaling Study
 
 **Setup**: Arithmetic basket call with equal weights. $\sigma_i = 0.2$, $\rho_{ij} = 0.3$ (equicorrelation), $K=1$, $r=0.05$, $T=1$. Network width: $h=256$ ($d \le 3$), $h=512$ ($d=5$). 50k Adam + 300 L-BFGS steps. MC reference: 500k paths at 100 random initial conditions.
 
 | $d$ | Relative $L^2$ error | Parameters | Hessian method |
 |:-:|:-:|:-:|:-:|
-| 1 | **0.10%** | 1,061,889 | Exact |
-| 2 | **3.87%** | 1,066,241 | Exact |
-| 3 | **6.27%** | 4,255,745 | Exact |
-| 5 | **2.40%** | 4,255,745 | Exact |
+| 1 | **0.16%** | 1,061,889 | Exact |
+| 2 | **3.20%** | 1,066,241 | Exact |
+| 3 | **5.03%** | 1,070,593 | Exact |
+| 5 | **11.23%** | 1,079,297 | Exact |
+| 7 | **13.14%** | 4,273,153 | Hutchinson |
+| 10 | **28.47%** | 4,299,265 | Hutchinson |
 
 The pricing error improves significantly at $d=5$ due to scaling the model width proportionately with dimensionality. While locally constrained to $d \le 5$ on a 6 GB memory budget, the implementation supports arbitrary scale seamlessly on enterprise hardware.
 
 <p align="center">
-  <img src="figures/fig1_scaling_error.png" width="500" alt="Scaling error"/>
+  <img src="figures/neurips/fig1_scaling_error.png" width="500" alt="Scaling error"/>
 </p>
 <p align="center"><em>DGM pricing error vs dimension.</em></p>
+
+### Parameter Efficiency
+
+<p align="center">
+  <img src="figures/neurips/fig10_parameters.png" width="700" alt="Parameter Efficiency"/>
+</p>
+<p align="center"><em>Model Size and Parameter Efficiency vs. Dimension.</em></p>
 
 ### Ablation Study
 
@@ -375,7 +389,7 @@ The pricing error improves significantly at $d=5$ due to scaling the model width
 - **Architectural Stability**: Both DGM and ResNet-style MLPs exhibit outstanding stability and competitive representational power at $d=2$. Under extreme scaling, DGM's continuous spatial injection natively guards against gradient degradation.
 
 <p align="center">
-  <img src="figures/fig4_ablation.png" width="600" alt="Ablation bar chart"/>
+  <img src="figures/neurips/fig7_ablation.png" width="600" alt="Ablation bar chart"/>
 </p>
 <p align="center"><em>Ablation study: relative L² error across 7 configurations (d=2, 50k steps).</em></p>
 
@@ -393,7 +407,7 @@ The pricing error improves significantly at $d=5$ due to scaling the model width
 The robust structural formulation of the DGM solution precisely correlates with the true discounted payoff, reducing MC standard errors by **>1000×** at every dimension. The optimal coefficient $c^* \approx -0.951$ is stable across dimensions. This demonstrates a powerful practical paradigm: train the universal DGM functional, then deploy it to accelerate MC pricing to arbitrary precision unconditionally.
 
 <p align="center">
-  <img src="figures/fig3_hybrid_mc.png" width="600" alt="Hybrid MC results"/>
+  <img src="figures/neurips/fig6_hybrid_mc.png" width="600" alt="Hybrid MC results"/>
 </p>
 <p align="center"><em>Hybrid DGM-MC: variance reduction and standard error comparison across dimensions.</em></p>
 
