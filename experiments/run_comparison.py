@@ -170,14 +170,14 @@ def run_comparison_for_d(
     zhou_prices = zhou.predict(S0_test)
     
     # --- 4. Hybrid MC (Control Variates) ---
-    print(f"  Computing Hybrid MC reference (100k paths)...")
+    print(f"  Computing Hybrid MC reference (50k paths, 30 time steps)...")
     cv_pricer = HybridMCControlVariate(model, device)
     cv_prices = []
     cv_errors = []
     for i, s0 in enumerate(S0_test):
-        res = cv_pricer.price_with_cv(
+        res = cv_pricer.price_with_delta_cv(
             S0=s0, payoff_fn=mc_payoff, r=r, sigma=np.array(sigma_list), rho=np.array(rho_mat), T=T, K=K,
-            n_paths=100_000, seed=i
+            n_paths=50_000, n_steps=30, seed=i
         )
         cv_prices.append(res["cv_price"])
         cv_errors.append(res["cv_se"])

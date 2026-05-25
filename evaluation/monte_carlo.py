@@ -233,3 +233,94 @@ class HybridMCControlVariate(MonteCarloPricer):
             "n_paths": n_paths,
         }
 
+    def price_with_delta_cv(
+        self,
+        S0: np.ndarray,
+        payoff_fn: Callable[[np.ndarray], np.ndarray],
+        r: float,
+        sigma: np.ndarray,
+        rho: np.ndarray,
+        T: float,
+        K: float,
+        n_paths: int = 50_000,
+        n_steps: int = 30,
+        seed: int = 0,
+    ) -> Dict[str, float]:
+        """Compute the discounted expected payoff using Delta-hedging control variate.
+        
+        The estimator uses the stochastic integral of the Delta to achieve strictly
+        unbiased variance reduction.
+        """
+        S0_np = np.asarray(S0, dtype=np.float64)
+        sigma_np = np.asarray(sigma, dtype=np.float64)
+        rho_np = np.asarray(rho, dtype=np.float64)
+        d = len(S0_np)
+
+        L = validate_correlation_matrix(rho_np)
+        rng = np.random.RandomState(seed)
+        
+        dt = T / n_steps
+        
+        S_t = np.tile(S0_np, (n_paths, 1))
+        
+        # Accumulator for the stochastic integral control variate
+        cv_integral = np.zeros(n_paths)
+        
+        self.model.eval()
+        
+        for step in range(n_steps):
+            t_current = step * dt
+            
+            # 1. Evaluate Delta (gradient wrt spatial inputs)
+            x_t_np = np.log(S_t / K)
+            x_t = torch.tensor(x_t_np, dtype=torch.float32, device=self.device, requires_grad=True)
+            t_t = torch.full((n_paths, 1), t_current, dtype=torch.float32, device=self.device)
+            
+            u_val = self.model(t_t, x_t)
+            
+            # We want du/dx_i. Since u_val is shape (n_paths, 1), we sum it and call backward
+            grad_x = torch.autograd.grad(outputs=u_val.sum(), inputs=x_t, create_graph=False)[0]
+            
+            du_dx = grad_x.cpu().numpy() # shape (n_paths, d)
+            
+            # The actual delta is (1/S_i) * (du/dx_i). We need it to compute the integral:
+            # I = sum exp(-rt) * sigma_i * S_i * Delta_i * dW_i
+            # Since Delta_i = (du/dx_i) / S_i, the S_i cancels out!
+            # So I = sum exp(-rt) * sigma_i * (du/dx_i) * dW_i
+            
+            # 2. Simulate Brownian increment
+            eps = rng.randn(n_paths, d)
+            dW = (eps @ L.T) * np.sqrt(dt)
+            
+            # 3. Add to integral
+            # Element-wise product of sigma, du/dx, and dW, then sum across assets
+            integrand = np.exp(-r * t_current) * (sigma_np * du_dx * dW).sum(axis=1)
+            cv_integral += integrand
+            
+            # 4. Advance S_t to next step
+            drift = (r - 0.5 * sigma_np**2) * dt
+            diffusion = sigma_np * dW
+            S_t = S_t * np.exp(drift + diffusion)
+            
+        payoffs = payoff_fn(S_t)
+        discounted = np.exp(-r * T) * payoffs
+        
+        # The unbiased control variate estimator
+        cv_estimate = discounted - cv_integral
+        
+        vanilla_price = float(np.mean(discounted))
+        vanilla_se = float(np.std(discounted) / np.sqrt(n_paths))
+        cv_price = float(np.mean(cv_estimate))
+        cv_se = float(np.std(cv_estimate) / np.sqrt(n_paths))
+        variance_reduction = 1 - (cv_se / vanilla_se)**2 if vanilla_se > 0 else 0
+        
+        return {
+            "vanilla_price": vanilla_price,
+            "vanilla_se": vanilla_se,
+            "cv_price": cv_price,
+            "cv_se": cv_se,
+            "variance_reduction": float(variance_reduction),
+            "c_star": 1.0,  # Implicitly 1.0 for exact Delta hedging
+            "n_paths": n_paths,
+        }
+

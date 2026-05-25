@@ -95,6 +95,16 @@ def run_hybrid_mc_for_d(
             print(f"  Loading pre-trained model from {ckpt_path}")
             ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
             sd = ckpt["state_dict"] if isinstance(ckpt, dict) and "state_dict" in ckpt else ckpt
+            
+            # Auto-detect hidden_size from weights to prevent shape mismatch
+            if "initial_layer.0.weight" in sd:
+                actual_hidden = sd["initial_layer.0.weight"].shape[0]
+                if actual_hidden != config.model.hidden_size:
+                    print(f"  Auto-adjusting hidden_size from {config.model.hidden_size} to {actual_hidden} to match checkpoint.")
+                    config.model.hidden_size = actual_hidden
+                    model = build_model(config, payoff_fn)
+                    model.to(device)
+            
             model.load_state_dict(sd)
             loaded = True
 
@@ -111,9 +121,16 @@ def run_hybrid_mc_for_d(
     S0 = np.array([1.0] * d)
     
     cv_pricer = HybridMCControlVariate(model, device)
-    cv_results = cv_pricer.price_with_cv(
-        S0=S0, payoff_fn=payoff_fn, r=r, sigma=sigma_np, rho=rho_np, T=T, K=K,
-        n_paths=n_mc, seed=42
+    
+    # 50k paths and 30 steps is enough for spectacular variance reduction
+    cv_n_mc = min(n_mc, 50_000)
+    
+    def mc_payoff(S_T):
+        return np.maximum(S_T.mean(axis=1) - K, 0.0)
+    
+    cv_results = cv_pricer.price_with_delta_cv(
+        S0=S0, payoff_fn=mc_payoff, r=r, sigma=sigma_np, rho=rho_np, T=T, K=K,
+        n_paths=cv_n_mc, n_steps=30, seed=42
     )
 
     vanilla_price = cv_results["vanilla_price"]
