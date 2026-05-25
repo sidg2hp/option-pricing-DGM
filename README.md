@@ -359,7 +359,7 @@ The higher gamma error relative to delta is expected: gamma involves second deri
 ### Time to Solution
 
 <p align="center">
-  <img src="figures/neurips/fig14_time_analysis.png" width="600" alt="Time to Solution"/>
+  <img src="figures/neurips/fig14_time_solution.png" width="600" alt="Time to Solution"/>
 </p>
 <p align="center"><em>Time to Solution Analysis: Pre-trained DGM enables sub-millisecond evaluation at millions of coordinate points simultaneously, compared to expensive MC path generation.</em></p>
 
