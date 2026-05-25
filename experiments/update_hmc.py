@@ -35,14 +35,15 @@ for d_str in ["1", "2", "3", "5", "7", "10"]:
         output_dir=f"results/scaling/d_{d}"
     )
     
-    model = build_model(config, None)
+    payoff_fn, _ = get_payoff_fn("basket_call", K)
+    model = build_model(config, payoff_fn)
     ckpt_path = f"results/scaling/d_{d}/scaling_d{d}/checkpoints/best_model.pt"
     if os.path.exists(ckpt_path):
         ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
         if "initial_layer.0.weight" in ckpt["state_dict"]:
             actual_hidden = ckpt["state_dict"]["initial_layer.0.weight"].shape[0]
             config.model.hidden_size = actual_hidden
-            model = build_model(config, None)
+            model = build_model(config, payoff_fn)
         model.load_state_dict(ckpt["state_dict"])
     model.eval()
 
