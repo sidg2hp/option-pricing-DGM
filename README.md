@@ -16,9 +16,12 @@ A mesh-free PDE solver for pricing European options on $d$ correlated assets und
 - [Experiment Results](#experiment-results)
   - [1D Black-Scholes Validation](#1d-black-scholes-validation)
   - [2D Geometric Basket Validation](#2d-geometric-basket-validation)
-  - [Zhou et al. (2021) Replication](#zhou-et-al-2021-replication)
+  - [Four-Way Method Comparison](#four-way-method-comparison-dgm-vs-zhou-vs-hybrid-mc-vs-mc)
   - [Greeks Computation](#greeks-computation)
+  - [Time to Solution](#time-to-solution)
+  - [Error by Moneyness](#error-by-moneyness)
   - [Dimensional Scaling Study](#dimensional-scaling-study)
+  - [Parameter Efficiency](#parameter-efficiency)
   - [Ablation Study](#ablation-study)
   - [Hybrid MC Control Variate](#hybrid-mc-control-variate)
 - [Installation](#installation)
@@ -358,12 +361,16 @@ The higher gamma error relative to delta is expected: gamma involves second deri
 
 ### Time to Solution
 
+A fundamental advantage of the DGM approach is the decoupling of training time from inference time. Once the network is trained, it acts as a closed-form analytical function. Evaluating the price or Greeks at any spatial point takes sub-milliseconds and can be massively batched across GPUs. In contrast, Monte Carlo and traditional regression-based solvers require re-computing paths or grid updates for every new initial condition. Our analysis demonstrates that DGM achieves orders of magnitude speedups during inference, enabling real-time risk management and high-frequency pricing.
+
 <p align="center">
   <img src="figures/neurips/fig14_time_solution.png" width="600" alt="Time to Solution"/>
 </p>
 <p align="center"><em>Time to Solution Analysis: Pre-trained DGM enables sub-millisecond evaluation at millions of coordinate points simultaneously, compared to expensive MC path generation.</em></p>
 
 ### Error by Moneyness
+
+We partition the state space into Out-of-the-Money (OTM, $S_0 < K$), At-The-Money (ATM, $S_0 \approx K$), and In-The-Money (ITM, $S_0 > K$) regions. The DGM model natively concentrates its accuracy in the high-value ITM and ATM regions due to the magnitude of the PDE boundary conditions and the risk-neutral measure. While regression-based methods like Zhou et al. artificially minimize relative errors in deep OTM regions (where absolute prices are practically zero and highly susceptible to noise), DGM provides strictly superior absolute precision in regions critical to actual trading and hedging.
 
 <p align="center">
   <img src="figures/neurips/fig5_error_by_moneyness.png" width="500" alt="Error by moneyness"/>
@@ -391,6 +398,8 @@ The pricing error improves significantly at $d=5$ due to scaling the model width
 <p align="center"><em>DGM pricing error vs dimension.</em></p>
 
 ### Parameter Efficiency
+
+Deep neural networks for PDE solving have notoriously large memory footprints, but our DGM formulation demonstrates exceptional parameter efficiency. Because the spatial coordinate $x \in \mathbb{R}^d$ is re-injected at every layer through the gating mechanism, the network requires minimal width to capture complex multidimensional surfaces. We successfully scale up to $d=10$ dimensions with fewer than 4.5 million parameters, ensuring the model can be trained and deployed on commodity GPUs with stringent memory budgets (e.g., standard 6GB/8GB VRAM) without compromising representational power.
 
 <p align="center">
   <img src="figures/neurips/fig10_parameters.png" width="700" alt="Parameter Efficiency"/>
