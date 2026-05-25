@@ -342,6 +342,13 @@ The higher gamma error relative to delta is expected: gamma involves second deri
 </p>
 <p align="center"><em>Pricing Error by Moneyness Region.</em></p>
 
+### Error by Moneyness
+
+<p align="center">
+  <img src="figures/neurips/fig5_error_by_moneyness.png" width="500" alt="Error by moneyness"/>
+</p>
+<p align="center"><em>Pricing Error by Moneyness Region.</em></p>
+
 ### Dimensional Scaling Study
 
 **Setup**: Arithmetic basket call with equal weights. $\sigma_i = 0.2$, $\rho_{ij} = 0.3$ (equicorrelation), $K=1$, $r=0.05$, $T=1$. Network width: $h=256$ ($d \le 3$), $h=512$ ($d=5$). 50k Adam + 300 L-BFGS steps. MC reference: 500k paths at 100 random initial conditions.
@@ -361,6 +368,13 @@ The pricing error improves significantly at $d=5$ due to scaling the model width
   <img src="figures/neurips/fig1_scaling_error.png" width="500" alt="Scaling error"/>
 </p>
 <p align="center"><em>DGM pricing error vs dimension.</em></p>
+
+### Parameter Efficiency
+
+<p align="center">
+  <img src="figures/neurips/fig10_parameters.png" width="700" alt="Parameter Efficiency"/>
+</p>
+<p align="center"><em>Model Size and Parameter Efficiency vs. Dimension.</em></p>
 
 ### Parameter Efficiency
 
