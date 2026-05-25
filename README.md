@@ -328,19 +328,18 @@ $$\Delta_i = \frac{1}{S_i}\frac{\partial u}{\partial x_i}, \qquad \Gamma_i = \fr
 | Gamma | **2.95%** |
 
 <p align="center">
-  <img src="figures/delta_1d.png" width="400" alt="Delta comparison"/>
-  <img src="figures/gamma_1d.png" width="400" alt="Gamma comparison"/>
+  <img src="figures/neurips/fig13_greeks.png" width="800" alt="Analytical Greeks"/>
 </p>
-<p align="center"><em>DGM delta and gamma vs Black-Scholes analytical values at t=0.</em></p>
+<p align="center"><em>DGM analytical Delta and Gamma vs Finite Difference MC Reference. The exact computation ensures perfectly smooth Greeks.</em></p>
 
 The higher gamma error relative to delta is expected: gamma involves second derivatives of the network, amplifying approximation errors. This is consistent with standard PINN behaviour for second-order quantities.
 
-### Error by Moneyness
+### Time to Solution
 
 <p align="center">
-  <img src="figures/neurips/fig5_error_by_moneyness.png" width="500" alt="Error by moneyness"/>
+  <img src="figures/neurips/fig14_time_analysis.png" width="600" alt="Time to Solution"/>
 </p>
-<p align="center"><em>Pricing Error by Moneyness Region.</em></p>
+<p align="center"><em>Time to Solution Analysis: Pre-trained DGM enables sub-millisecond evaluation at millions of coordinate points simultaneously, compared to expensive MC path generation.</em></p>
 
 ### Error by Moneyness
 
@@ -368,13 +367,6 @@ The pricing error improves significantly at $d=5$ due to scaling the model width
   <img src="figures/neurips/fig1_scaling_error.png" width="500" alt="Scaling error"/>
 </p>
 <p align="center"><em>DGM pricing error vs dimension.</em></p>
-
-### Parameter Efficiency
-
-<p align="center">
-  <img src="figures/neurips/fig10_parameters.png" width="700" alt="Parameter Efficiency"/>
-</p>
-<p align="center"><em>Model Size and Parameter Efficiency vs. Dimension.</em></p>
 
 ### Parameter Efficiency
 
