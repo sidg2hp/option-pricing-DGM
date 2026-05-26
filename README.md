@@ -255,7 +255,8 @@ $$\sigma_{\text{geo}} = \frac{1}{d}\sqrt{\sum_{i,j}\rho_{ij}\sigma_i\sigma_j}, \
 | 3 | 6.05% | 2.24% | **0.54%** |
 | 5 | 2.40% | 1.47% | **2.63%** |
 | 7 | 6.74% | 3.43% | **5.44%** |
-| 10 | 5.65% | 3.52% | **5.33%** |
+| 10 | 5.65% | 3.52% |
+| 50 | **5.56%** | 161.54% | **5.33%** |
 
 **Detailed prices at d=1:**
 
@@ -389,6 +390,7 @@ We partition the state space into Out-of-the-Money (OTM, $S_0 < K$), At-The-Mone
 | 5 | **11.23%** | 1,079,297 | Exact |
 | 7 | **13.14%** | 4,273,153 | Hutchinson |
 | 10 | **28.47%** | 4,299,265 | Hutchinson |
+| 50 | **70.76%** | 4,647,425 | Hutchinson |
 
 The pricing error improves significantly at $d=5$ due to scaling the model width proportionately with dimensionality. While locally constrained to $d \le 5$ on a 6 GB memory budget, the implementation supports arbitrary scale seamlessly on enterprise hardware.
 
