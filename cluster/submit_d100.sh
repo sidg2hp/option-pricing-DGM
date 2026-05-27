@@ -3,7 +3,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=40
 #SBATCH --gres=gpu:1
-#SBATCH --time=48:00:00
+#SBATCH --time=24:00:00
 #SBATCH --output=scaling_d100_%j.out
 #SBATCH --error=scaling_d100_%j.err
 #SBATCH --partition=gpu
