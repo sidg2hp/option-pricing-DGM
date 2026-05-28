@@ -60,5 +60,5 @@ mc:
   n_paths: 1000000
   use_antithetic: true
   seed: 0
-output_dir: results/paper/comparison/d_3
+output_dir: results/publication/comparison/d_3
 device: cuda

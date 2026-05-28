@@ -66,6 +66,6 @@
     "use_antithetic": true,
     "seed": 0
   },
-  "output_dir": "results/paper/comparison/d_2",
+  "output_dir": "results/publication/comparison/d_2",
   "device": "cuda"
 }

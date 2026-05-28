@@ -19,4 +19,4 @@ echo "Starting Full 5-Way Comparison for all d"
 # This will load the pre-trained DGM models from results/scaling, 
 # then compute Zhou, Hybrid MC, Vanilla MC, and Deep BSDE (ATM).
 python experiments/run_comparison.py --dims 1 2 3 5 7 10 25 50 100 --run_fbsde
-echo "Comparison Complete! Results saved to results/paper/comparison_summary.json"
+echo "Comparison Complete! Results saved to results/publication/comparison_summary.json"

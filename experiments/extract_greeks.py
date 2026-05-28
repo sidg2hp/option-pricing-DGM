@@ -166,7 +166,7 @@ def main():
     print("Computing MC finite difference Greeks...")
     mc_price, mc_delta, mc_gamma = compute_mc_greeks(S_test_coarse, config, epsilon=0.01)
 
-    os.makedirs("figures/neurips", exist_ok=True)
+    os.makedirs("figures/publication", exist_ok=True)
     
     plt.style.use('seaborn-v0_8-whitegrid')
     fig, axes = plt.subplots(1, 3, figsize=(18, 5))
@@ -196,9 +196,9 @@ def main():
     axes[2].legend(fontsize=12)
 
     plt.tight_layout()
-    plt.savefig("figures/neurips/fig13_greeks.pdf", bbox_inches='tight', dpi=300)
-    plt.savefig("figures/neurips/fig13_greeks.png", bbox_inches='tight', dpi=300)
-    print("Saved figures/neurips/fig13_greeks.pdf")
+    plt.savefig("figures/publication/fig13_greeks.pdf", bbox_inches='tight', dpi=300)
+    plt.savefig("figures/publication/fig13_greeks.png", bbox_inches='tight', dpi=300)
+    print("Saved figures/publication/fig13_greeks.pdf")
 
 
 if __name__ == "__main__":

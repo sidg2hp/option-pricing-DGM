@@ -120,7 +120,7 @@ def main():
     # ---------------------------------------------------------
     # 3. Plotting
     # ---------------------------------------------------------
-    os.makedirs("figures/neurips", exist_ok=True)
+    os.makedirs("figures/publication", exist_ok=True)
     
     plt.style.use('seaborn-v0_8-whitegrid')
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -149,9 +149,9 @@ def main():
             bbox=dict(facecolor='white', alpha=0.8, edgecolor='#d62728', boxstyle='round,pad=0.5'))
 
     plt.tight_layout()
-    plt.savefig("figures/neurips/fig14_time_solution.pdf", bbox_inches='tight', dpi=300)
-    plt.savefig("figures/neurips/fig14_time_solution.png", bbox_inches='tight', dpi=300)
-    print("Saved figures/neurips/fig14_time_solution.pdf")
+    plt.savefig("figures/publication/fig14_time_solution.pdf", bbox_inches='tight', dpi=300)
+    plt.savefig("figures/publication/fig14_time_solution.png", bbox_inches='tight', dpi=300)
+    print("Saved figures/publication/fig14_time_solution.pdf")
 
 
 if __name__ == "__main__":

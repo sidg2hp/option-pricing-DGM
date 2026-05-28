@@ -323,17 +323,17 @@ $$\sigma_{\text{geo}} = \frac{1}{d}\sqrt{\sum_{i,j}\rho_{ij}\sigma_i\sigma_j}, \
 **Analysis**: While the Zhou benchmark reports a lower *mean* relative error across the sample space, this aggregated metric is heavily skewed by Out-of-the-Money (OTM) points (e.g., $S_0=0.8$) tracking near-zero absolute prices. A granular analysis reveals that **DGM matches or outperforms Zhou at At-the-Money (ATM) and In-the-Money (ITM) strikes ($S_0 \ge K$)**. At $d=5$, $S_0=1.20$, DGM's absolute error ($1.9\times 10^{-4}$) is an order of magnitude smaller than Zhou's ($2.0\times 10^{-3}$). Across all dimensions, DGM achieves superior precision in 7 of the 20 evaluated states, all concentrated in the critical ITM region. Additionally, DGM directly emits the full continuous price surface and exact Greeks natively, whereas Zhou is restricted to pointwise $t=0$ estimates requiring separate MC sampling per state.
 
 <p align="center">
-  <img src="figures/neurips/fig2_4way_comparison.png" width="500" alt="DGM vs Zhou comparison"/>
+  <img src="figures/publication/fig2_4way_comparison.png" width="500" alt="DGM vs Zhou comparison"/>
 </p>
 <p align="center"><em>Mean relative error vs MC: Four-way comparison across dimensions.</em></p>
 
 <p align="center">
-  <img src="figures/neurips/fig3_price_comparison.png" width="800" alt="Zhou price surface"/>
+  <img src="figures/publication/fig3_price_comparison.png" width="800" alt="Zhou price surface"/>
   </p>
 <p align="center"><em>Price comparison across dimensions.</em></p>
 
 <p align="center">
-  <img src="figures/neurips/fig4_scatter.png" width="800" alt="Scatter plots"/>
+  <img src="figures/publication/fig4_scatter.png" width="800" alt="Scatter plots"/>
 </p>
 <p align="center"><em>Scatter plots: Predicted vs True MC Reference.</em></p>
 
@@ -356,7 +356,7 @@ $$\Delta_i = \frac{1}{S_i}\frac{\partial u}{\partial x_i}, \qquad \Gamma_i = \fr
 | Gamma | **2.95%** |
 
 <p align="center">
-  <img src="figures/neurips/fig13_greeks.png" width="800" alt="Analytical Greeks"/>
+  <img src="figures/publication/fig13_greeks.png" width="800" alt="Analytical Greeks"/>
 </p>
 <p align="center"><em>DGM analytical Delta and Gamma vs Finite Difference MC Reference. The exact computation ensures perfectly smooth Greeks.</em></p>
 
@@ -367,7 +367,7 @@ The higher gamma error relative to delta is expected: gamma involves second deri
 A fundamental advantage of the DGM approach is the decoupling of training time from inference time. Once the network is trained, it acts as a closed-form analytical function. Evaluating the price or Greeks at any spatial point takes sub-milliseconds and can be massively batched across GPUs. In contrast, Monte Carlo and traditional regression-based solvers require re-computing paths or grid updates for every new initial condition. Our analysis demonstrates that DGM achieves orders of magnitude speedups during inference, enabling real-time risk management and high-frequency pricing.
 
 <p align="center">
-  <img src="figures/neurips/fig14_time_solution.png" width="600" alt="Time to Solution"/>
+  <img src="figures/publication/fig14_time_solution.png" width="600" alt="Time to Solution"/>
 </p>
 <p align="center"><em>Time to Solution Analysis: Pre-trained DGM enables sub-millisecond evaluation at millions of coordinate points simultaneously, compared to expensive MC path generation.</em></p>
 
@@ -376,7 +376,7 @@ A fundamental advantage of the DGM approach is the decoupling of training time f
 We partition the state space into Out-of-the-Money (OTM, $S_0 < K$), At-The-Money (ATM, $S_0 \approx K$), and In-The-Money (ITM, $S_0 > K$) regions. The DGM model natively concentrates its accuracy in the high-value ITM and ATM regions due to the magnitude of the PDE boundary conditions and the risk-neutral measure. While regression-based methods like Zhou et al. artificially minimize relative errors in deep OTM regions (where absolute prices are practically zero and highly susceptible to noise), DGM provides strictly superior absolute precision in regions critical to actual trading and hedging.
 
 <p align="center">
-  <img src="figures/neurips/fig5_error_by_moneyness.png" width="500" alt="Error by moneyness"/>
+  <img src="figures/publication/fig5_error_by_moneyness.png" width="500" alt="Error by moneyness"/>
 </p>
 <p align="center"><em>Pricing Error by Moneyness Region.</em></p>
 
@@ -397,7 +397,7 @@ We partition the state space into Out-of-the-Money (OTM, $S_0 < K$), At-The-Mone
 The pricing error improves significantly at $d=5$ due to scaling the model width proportionately with dimensionality. While locally constrained to $d \le 5$ on a 6 GB memory budget, the implementation supports arbitrary scale seamlessly on enterprise hardware.
 
 <p align="center">
-  <img src="figures/neurips/fig1_scaling_error.png" width="500" alt="Scaling error"/>
+  <img src="figures/publication/fig1_scaling_error.png" width="500" alt="Scaling error"/>
 </p>
 <p align="center"><em>DGM pricing error vs dimension.</em></p>
 
@@ -406,7 +406,7 @@ The pricing error improves significantly at $d=5$ due to scaling the model width
 Deep neural networks for PDE solving have notoriously large memory footprints, but our DGM formulation demonstrates exceptional parameter efficiency. Because the spatial coordinate $x \in \mathbb{R}^d$ is re-injected at every layer through the gating mechanism, the network requires minimal width to capture complex multidimensional surfaces. We successfully scale up to $d=10$ dimensions with fewer than 4.5 million parameters, ensuring the model can be trained and deployed on commodity GPUs with stringent memory budgets (e.g., standard 6GB/8GB VRAM) without compromising representational power.
 
 <p align="center">
-  <img src="figures/neurips/fig10_parameters.png" width="700" alt="Parameter Efficiency"/>
+  <img src="figures/publication/fig10_parameters.png" width="700" alt="Parameter Efficiency"/>
 </p>
 <p align="center"><em>Model Size and Parameter Efficiency vs. Dimension.</em></p>
 
@@ -430,7 +430,7 @@ Deep neural networks for PDE solving have notoriously large memory footprints, b
 - **Architectural Stability**: Both DGM and ResNet-style MLPs exhibit outstanding stability and competitive representational power at $d=2$. Under extreme scaling, DGM's continuous spatial injection natively guards against gradient degradation.
 
 <p align="center">
-  <img src="figures/neurips/fig7_ablation.png" width="600" alt="Ablation bar chart"/>
+  <img src="figures/publication/fig7_ablation.png" width="600" alt="Ablation bar chart"/>
 </p>
 <p align="center"><em>Ablation study: relative L² error across 7 configurations (d=2, 50k steps).</em></p>
 
@@ -448,7 +448,7 @@ Deep neural networks for PDE solving have notoriously large memory footprints, b
 The robust structural formulation of the DGM solution precisely correlates with the true discounted payoff, reducing MC standard errors by **>1000×** at every dimension. The optimal coefficient $c^* \approx -0.951$ is stable across dimensions. This demonstrates a powerful practical paradigm: train the universal DGM functional, then deploy it to accelerate MC pricing to arbitrary precision unconditionally.
 
 <p align="center">
-  <img src="figures/neurips/fig6_hybrid_mc.png" width="600" alt="Hybrid MC results"/>
+  <img src="figures/publication/fig6_hybrid_mc.png" width="600" alt="Hybrid MC results"/>
 </p>
 <p align="center"><em>Hybrid DGM-MC: variance reduction and standard error comparison across dimensions.</em></p>
 

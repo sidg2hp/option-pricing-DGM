@@ -58,7 +58,7 @@ def run_comparison_for_d(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     payoff_fn, payoff_unclipped_fn = get_payoff_fn("basket_call", K)
 
-    out_dir = f"results/paper/comparison/d_{d}"
+    out_dir = f"results/publication/comparison/d_{d}"
     os.makedirs(out_dir, exist_ok=True)
 
     # --- Test points ---
@@ -248,7 +248,7 @@ def main():
         print(f"Three-way comparison: d = {d}")
         print(f"{'='*60}")
 
-        result_path = f"results/paper/comparison/d_{d}/comparison_results.json"
+        result_path = f"results/publication/comparison/d_{d}/comparison_results.json"
         if os.path.exists(result_path):
             print(f"  Skipping d={d} (found existing results)")
             with open(result_path) as f:
@@ -256,8 +256,8 @@ def main():
         else:
             all_results[str(d)] = run_comparison_for_d(d, args.model_base, args.n_dgm_steps, args.run_fbsde)
 
-    os.makedirs("results/paper", exist_ok=True)
-    save_json(all_results, "results/paper/comparison_summary.json")
+    os.makedirs("results/publication", exist_ok=True)
+    save_json(all_results, "results/publication/comparison_summary.json")
 
     # Print summary table
     print("\n" + "=" * 95)

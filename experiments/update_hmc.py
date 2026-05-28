@@ -10,7 +10,7 @@ from models.model_factory import build_model
 from utils.math_utils import build_equicorrelation_matrix
 from pde.payoffs import get_payoff_fn
 
-summary_path = "results/paper/comparison_summary.json"
+summary_path = "results/publication/comparison_summary.json"
 with open(summary_path, "r") as f:
     summary = json.load(f)
 

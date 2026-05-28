@@ -59,7 +59,7 @@ def main():
     dgm_errs = []
     zhou_errs = []
     for d in [1, 2, 3, 5]:
-        path = f"results/paper/comparison/d_{d}/comparison_results.json"
+        path = f"results/publication/comparison/d_{d}/comparison_results.json"
         if os.path.exists(path):
             r = load_json(path)
             comp_dims.append(d)
@@ -174,7 +174,7 @@ def main():
     # Fig 5: Per-dimension price comparison tables
     # ================================================================
     for d in [1, 2, 3, 5]:
-        path = f"results/paper/comparison/d_{d}/comparison_results.json"
+        path = f"results/publication/comparison/d_{d}/comparison_results.json"
         if not os.path.exists(path):
             continue
         r = load_json(path)
@@ -218,7 +218,7 @@ def main():
     cols = ["$d$", "DGM Error", "Zhou Error", "Hybrid MC VR", "DGM Params"]
     cell_text = []
     for d in [1, 2, 3, 5]:
-        comp_path = f"results/paper/comparison/d_{d}/comparison_results.json"
+        comp_path = f"results/publication/comparison/d_{d}/comparison_results.json"
         scale_path = f"results/scaling/d_{d}/result.json"
         hmc_d = hmc.get(str(d), {}) if os.path.exists(hmc_path) else {}
 

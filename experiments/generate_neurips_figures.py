@@ -82,7 +82,7 @@ def load_json(path):
         return json.load(f)
 
 
-FIG_DIR = "figures/neurips"
+FIG_DIR = "figures/publication"
 S0_TEST = [0.80, 0.90, 1.00, 1.10, 1.20]
 
 
@@ -91,7 +91,7 @@ def main():
     os.makedirs(FIG_DIR, exist_ok=True)
 
     # Load data sources
-    comp_path = "results/paper/comparison_summary.json"
+    comp_path = "results/publication/comparison_summary.json"
     abl_path = "results/ablations/ablation_summary.json"
     hmc_path = "results/hybrid_mc/hybrid_mc_summary.json"
 
