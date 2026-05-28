@@ -245,7 +245,7 @@ def main():
 
     for d in args.dims:
         print(f"\n{'='*60}")
-        print(f"Three-way comparison: d = {d}")
+        print(f"5-Way Comparison: d = {d}")
         print(f"{'='*60}")
 
         result_path = f"results/publication/comparison/d_{d}/comparison_results.json"
