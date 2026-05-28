@@ -249,10 +249,45 @@ def main():
         print(f"{'='*60}")
 
         result_path = f"results/publication/comparison/d_{d}/comparison_results.json"
+        
+        # If the file already exists, we might only need to run FBSDE
         if os.path.exists(result_path):
-            print(f"  Skipping d={d} (found existing results)")
             with open(result_path) as f:
-                all_results[str(d)] = json.load(f)
+                d_result = json.load(f)
+            
+            # If the user requested FBSDE and it's missing from the loaded results, just run FBSDE!
+            if args.run_fbsde and "fbsde_atm_rel_error" not in d_result:
+                print(f"  Existing results found for d={d}, but FBSDE is missing. Running FBSDE only...")
+                from configs.base_config import ExperimentConfig, MarketConfig
+                
+                sigma_list = [0.2] * d
+                from utils.math_utils import build_equicorrelation_matrix
+                rho_mat = build_equicorrelation_matrix(d, 0.3).tolist()
+                S0_list = [1.0] * d
+                market_cfg = MarketConfig(d=d, r=0.05, T=1.0, K=1.0, sigma=sigma_list, rho=rho_mat, S0=S0_list, payoff_type="basket_call")
+                
+                fbsde = DeepBSDEPricer(market_cfg, n_steps=20_000, device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
+                fbsde.train()
+                
+                # Re-evaluate exactly like in the main function
+                S0_test_values = [0.8, 0.9, 1.0, 1.1, 1.2]
+                fbsde_prices = fbsde.price(np.array([S0_val * np.ones(d) for S0_val in S0_test_values]))
+                
+                atm_idx = S0_test_values.index(1.0)
+                fbsde_atm_price = fbsde_prices[atm_idx]
+                mc_atm_price = d_result["mc_prices"][atm_idx]
+                fbsde_atm_rel_error = float(abs(fbsde_atm_price - mc_atm_price) / max(mc_atm_price, 1e-6))
+                
+                d_result["fbsde_prices"] = fbsde_prices.tolist()
+                d_result["fbsde_atm_rel_error"] = fbsde_atm_rel_error
+                print(f"  FBSDE ATM Price: {fbsde_atm_price:.4f} (Rel Error: {fbsde_atm_rel_error:.2%})")
+                
+                # Re-save the patched result
+                save_json(d_result, result_path)
+            else:
+                print(f"  Skipping d={d} (found existing complete results)")
+                
+            all_results[str(d)] = d_result
         else:
             all_results[str(d)] = run_comparison_for_d(d, args.model_base, args.n_dgm_steps, args.run_fbsde)
 
