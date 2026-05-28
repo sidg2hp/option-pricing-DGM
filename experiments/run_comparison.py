@@ -16,6 +16,7 @@ import numpy as np
 import torch
 
 from baselines.zhou_et_al import ZhouEtAlPricer
+from baselines.fbsde_pricer import DeepBSDEPricer
 from configs.base_config import ExperimentConfig, MarketConfig, ModelConfig, TrainingConfig
 from evaluation.monte_carlo import MonteCarloPricer, HybridMCControlVariate
 from models.model_factory import build_model
@@ -30,6 +31,7 @@ def run_comparison_for_d(
     d: int,
     model_base: str = "results/scaling",
     n_dgm_steps: int = 50_000,
+    run_fbsde: bool = False,
 ) -> dict:
     """Run three-way comparison for a single dimension.
 
@@ -188,6 +190,21 @@ def run_comparison_for_d(
     dgm_rel_errors = np.abs(dgm_prices - mc_prices) / mc_prices
     zhou_rel_errors = np.abs(zhou_prices - mc_prices) / mc_prices
 
+    # --- 5. Deep BSDE Baseline ---
+    fbsde_prices = np.full(len(S0_test_values), np.nan)
+    fbsde_atm_rel_error = None
+    if run_fbsde:
+        print(f"  Training Deep BSDE (ATM only, 20k steps)...")
+        fbsde = DeepBSDEPricer(config.market, n_steps=20_000, device=device)
+        fbsde.train()
+        fbsde_prices = fbsde.price(S0_test)
+        
+        atm_idx = S0_test_values.index(1.0)
+        fbsde_atm_price = fbsde_prices[atm_idx]
+        mc_atm_price = mc_prices[atm_idx]
+        fbsde_atm_rel_error = float(abs(fbsde_atm_price - mc_atm_price) / max(mc_atm_price, 1e-6))
+        print(f"  FBSDE ATM Price: {fbsde_atm_price:.4f} (Rel Error: {fbsde_atm_rel_error:.2%})")
+
     result = {
         "d": d,
         "S0_test": S0_test_values,
@@ -199,6 +216,8 @@ def run_comparison_for_d(
         "cv_errors": cv_errors.tolist(),
         "dgm_mean_rel_error": float(np.mean(dgm_rel_errors)),
         "zhou_mean_rel_error": float(np.mean(zhou_rel_errors)),
+        "fbsde_prices": fbsde_prices.tolist(),
+        "fbsde_atm_rel_error": fbsde_atm_rel_error,
     }
 
     save_json(result, f"{out_dir}/comparison_results.json")
@@ -218,6 +237,7 @@ def main():
     parser.add_argument("--model_base", type=str, default="results/scaling")
     parser.add_argument("--n_dgm_steps", type=int, default=50_000,
                         help="DGM steps (only used if no pre-trained model found)")
+    parser.add_argument("--run_fbsde", action="store_true", help="Run Deep BSDE baseline (ATM only)")
     args = parser.parse_args()
 
     seed_everything(42)
@@ -234,22 +254,24 @@ def main():
             with open(result_path) as f:
                 all_results[str(d)] = json.load(f)
         else:
-            all_results[str(d)] = run_comparison_for_d(d, args.model_base, args.n_dgm_steps)
+            all_results[str(d)] = run_comparison_for_d(d, args.model_base, args.n_dgm_steps, args.run_fbsde)
 
     os.makedirs("results/paper", exist_ok=True)
     save_json(all_results, "results/paper/comparison_summary.json")
 
     # Print summary table
-    print("\n" + "=" * 80)
+    print("\n" + "=" * 95)
     print("Summary: Mean relative error vs MC & Hybrid MC SE")
-    print("=" * 80)
-    print(f"{'d':>4s} {'DGM (Err)':>12s} {'Zhou (Err)':>12s} {'MC SE':>12s} {'HMC SE':>12s}")
+    print("=" * 95)
+    print(f"{'d':>4s} {'DGM (Err)':>12s} {'Zhou (Err)':>12s} {'MC SE':>12s} {'HMC SE':>12s} {'FBSDE ATM Err':>15s}")
     for d_str in sorted(all_results.keys(), key=int):
         r = all_results[d_str]
         mean_mc_se = np.mean(r['mc_errors'])
         mean_cv_se = np.mean(r['cv_errors'])
+        fbsde_err = r.get("fbsde_atm_rel_error")
+        fbsde_str = f"{fbsde_err:15.4%}" if fbsde_err is not None else f"{'N/A':>15s}"
         print(f"{r['d']:4d} {r['dgm_mean_rel_error']:12.4%} "
-              f"{r['zhou_mean_rel_error']:12.4%} {mean_mc_se:12.6f} {mean_cv_se:12.6f}")
+              f"{r['zhou_mean_rel_error']:12.4%} {mean_mc_se:12.6f} {mean_cv_se:12.6f} {fbsde_str}")
 
 
 if __name__ == "__main__":
