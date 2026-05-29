@@ -224,6 +224,12 @@ def main():
                 markersize=4, markerfacecolor='white', markeredgewidth=1.2, zorder=4)
         ax.plot(S0_TEST, r["cv_prices"], '^:', color=CB_GREEN, label="Hybrid MC",
                 markersize=4, markerfacecolor='white', markeredgewidth=1.2, zorder=4)
+        
+        if "fbsde_prices" in r:
+            fbsde_val = r["fbsde_prices"][2]
+            if not np.isnan(fbsde_val):
+                ax.plot([1.0], [fbsde_val], '*', color=CB_PURPLE, label="Deep BSDE (ATM only)",
+                        markersize=9, zorder=6)
 
         # MC 95% CI band
         mc_lo = [r["mc_prices"][i] - 1.96 * r["mc_errors"][i] for i in range(5)]
