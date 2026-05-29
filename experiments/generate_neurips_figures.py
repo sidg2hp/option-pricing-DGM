@@ -247,7 +247,7 @@ def main():
         row, col = divmod(idx, n_cols)
         axes[row][col].set_visible(False)
 
-    fig.suptitle("Option Prices: DGM vs Zhou vs Hybrid MC vs MC Reference", fontsize=11, y=1.02)
+    fig.suptitle("Option Prices: DGM vs Zhou vs Hybrid MC vs Deep BSDE vs MC Reference", fontsize=11, y=1.02)
     plt.tight_layout()
     save_fig(fig, f"{FIG_DIR}/fig3_price_comparison")
     print("  [OK] fig3_price_comparison")
