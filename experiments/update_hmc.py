@@ -14,7 +14,7 @@ summary_path = "results/publication/comparison_summary.json"
 with open(summary_path, "r") as f:
     summary = json.load(f)
 
-device = torch.device("cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 K = 1.0
 r = 0.05
 T = 1.0

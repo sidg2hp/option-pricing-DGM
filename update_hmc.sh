@@ -17,7 +17,7 @@ conda activate dgm_env
 cd /home/siddhartha_g_ma.iitr/dgm_option_pricing
 
 echo "Starting Hybrid MC update..."
-python experiments/update_hmc.py
+python -u experiments/update_hmc.py
 
 echo "Done! Updating git..."
 git add results/publication/comparison_summary.json
