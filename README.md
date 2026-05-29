@@ -242,23 +242,23 @@ $$\sigma_{\text{geo}} = \frac{1}{d}\sqrt{\sum_{i,j}\rho_{ij}\sigma_i\sigma_j}, \
 </p>
 <p align="center"><em>DGM-learned 2D geometric basket call price surface V(0, S₁, S₂).</em></p>
 
-### Four-Way Method Comparison (DGM vs Zhou vs Hybrid MC vs MC)
+### Five-Way Method Comparison (DGM vs Zhou vs Hybrid MC vs Deep BSDE vs MC)
 
-**Setup**: For each $d \in \{1, 2, 3, 5\}$: DGM (pre-trained), Zhou NN ($10^5$ training samples with 50-path MC labels, 200 epochs), MC reference ($10^6$ paths). Five test points $S_0/K \in \{0.8, 0.9, 1.0, 1.1, 1.2\}$ per dimension.
+**Setup**: For each $d \in \{1, \dots, 100\}$: DGM (PDE solver), Zhou NN (MC regression), Hybrid MC, and Deep BSDE (Forward-Backward SDE solver). 
 
 **Mean relative error vs MC reference:**
 
-| $d$ | **DGM (PDE)** | **Zhou NN** | **Hybrid MC** | **MC SE** |
-|:-:|:-:|:-:|:-:|:-:|
-| 1 | **0.01%** | 0.04% | **0.06%** | 1.44e-04 |
-| 2 | 0.05% | **0.02%** | **0.36%** | 1.15e-04 |
-| 3 | 0.06% | **0.02%** | **0.54%** | 1.04e-04 |
-| 5 | 0.02% | **0.01%** | **2.63%** | 9.41e-05 |
-| 7 | 0.07% | **0.03%** | **5.44%** | 8.96e-05 |
-| 10 | 0.06% | **0.04%** | **5.33%** | 8.60e-05 |
-| 25 | **0.04%** | 0.33% | **0.02%** | 8.07e-05 |
-| 50 | **0.06%** | 1.62% | **0.14%** | 7.89e-05 |
-| 100 | **0.61%** | 4.63% | **0.10%** | 7.79e-05 |
+| $d$ | **DGM (PDE)** | **Zhou NN** | **Hybrid MC** | **Deep BSDE** | **MC SE** |
+|:-:|:-:|:-:|:-:|:-:|:-:|
+| 1 | **1.15%** | 3.65% | **0.06%** | **0.39%** | 1.44e-04 |
+| 2 | **4.86%** | **2.12%** | **0.36%** | **0.06%** | 1.15e-04 |
+| 3 | **6.05%** | **2.24%** | **0.54%** | **0.09%** | 1.04e-04 |
+| 5 | **2.40%** | **1.47%** | 2.63% | **0.28%** | 9.41e-05 |
+| 7 | **6.74%** | **3.43%** | 5.44% | **0.22%** | 8.96e-05 |
+| 10 | **5.65%** | **3.52%** | 5.33% | **0.47%** | 8.60e-05 |
+| 25 | **3.55%** | 33.22% | **0.02%** | **0.18%** | 8.07e-05 |
+| 50 | **5.56%** | 161.54% | **0.14%** | **0.11%** | 7.89e-05 |
+| 100 | 60.69% | 463.09% | **0.10%** | **0.19%** | 7.79e-05 |
 
 **Detailed prices at d=1:**
 
@@ -323,9 +323,9 @@ $$\sigma_{\text{geo}} = \frac{1}{d}\sqrt{\sum_{i,j}\rho_{ij}\sigma_i\sigma_j}, \
 **Analysis**: While the Zhou benchmark reports a lower *mean* relative error across the sample space, this aggregated metric is heavily skewed by Out-of-the-Money (OTM) points (e.g., $S_0=0.8$) tracking near-zero absolute prices. A granular analysis reveals that **DGM matches or outperforms Zhou at At-the-Money (ATM) and In-the-Money (ITM) strikes ($S_0 \ge K$)**. At $d=5$, $S_0=1.20$, DGM's absolute error ($1.9\times 10^{-4}$) is an order of magnitude smaller than Zhou's ($2.0\times 10^{-3}$). Across all dimensions, DGM achieves superior precision in 7 of the 20 evaluated states, all concentrated in the critical ITM region. Additionally, DGM directly emits the full continuous price surface and exact Greeks natively, whereas Zhou is restricted to pointwise $t=0$ estimates requiring separate MC sampling per state.
 
 <p align="center">
-  <img src="figures/publication/fig2_4way_comparison.png" width="500" alt="DGM vs Zhou comparison"/>
+  <img src="figures/publication/fig2_5way_comparison.png" width="500" alt="DGM vs Zhou comparison"/>
 </p>
-<p align="center"><em>Mean relative error vs MC: Four-way comparison across dimensions.</em></p>
+<p align="center"><em>Mean relative error vs MC: Five-way comparison across dimensions.</em></p>
 
 <p align="center">
   <img src="figures/publication/fig3_price_comparison.png" width="800" alt="Zhou price surface"/>
