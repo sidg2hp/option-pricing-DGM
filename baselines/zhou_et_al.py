@@ -75,7 +75,7 @@ class ZhouEtAlPricer:
         self.market = market
         self.payoff_fn = payoff_fn
         self.seed = seed
-        self.device = torch.device("cpu")
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model = ZhouNNModel(market.d).to(self.device)
 
     def generate_training_data(

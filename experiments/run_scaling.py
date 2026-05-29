@@ -159,6 +159,8 @@ def main():
     parser.add_argument("--lbfgs_steps", type=int, default=300)
     parser.add_argument("--clean", action="store_true",
                         help="Delete old result.json files before running (fresh start)")
+    parser.add_argument("--force", action="store_true",
+                        help="Force recomputation even if result.json exists")
     args = parser.parse_args()
 
     # Optionally clean old results (keeps checkpoints for auto-resume)
@@ -179,7 +181,7 @@ def main():
         
         skip = False
         for rp in [result_path, alt_path]:
-            if os.path.exists(rp):
+            if os.path.exists(rp) and not args.force:
                 import json, math
                 with open(rp, "r") as f:
                     existing = json.load(f)

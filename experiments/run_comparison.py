@@ -232,12 +232,12 @@ def run_comparison_for_d(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Three-way comparison: DGM vs Zhou vs MC")
-    parser.add_argument("--dims", type=int, nargs="+", default=[1, 2, 3, 5, 7, 10])
-    parser.add_argument("--model_base", type=str, default="results/scaling")
-    parser.add_argument("--n_dgm_steps", type=int, default=50_000,
-                        help="DGM steps (only used if no pre-trained model found)")
+    parser = argparse.ArgumentParser(description="Run 5-way baseline comparison")
+    parser.add_argument("--dims", type=int, nargs="+", default=[1, 2, 3, 5, 7, 10, 25, 50, 100])
+    parser.add_argument("--n_dgm_steps", type=int, default=50_000)
+    parser.add_argument("--model_base", type=str, default="results/scaling", help="Directory where pre-trained DGM models are located")
     parser.add_argument("--run_fbsde", action="store_true", help="Run Deep BSDE baseline (ATM only)")
+    parser.add_argument("--force", action="store_true", help="Force recomputation even if results exist")
     args = parser.parse_args()
 
     seed_everything(42)
@@ -251,7 +251,7 @@ def main():
         result_path = f"results/publication/comparison/d_{d}/comparison_results.json"
         
         # If the file already exists, we might only need to run FBSDE
-        if os.path.exists(result_path):
+        if os.path.exists(result_path) and not args.force:
             with open(result_path) as f:
                 d_result = json.load(f)
             

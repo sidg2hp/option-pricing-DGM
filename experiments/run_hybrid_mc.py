@@ -30,6 +30,7 @@ def run_hybrid_mc_for_d(
     n_mc: int = 100_000,
     model_dir: str | None = None,
     n_steps: int = 50_000,
+    force: bool = False,
 ) -> dict:
     """Run hybrid MC for a single dimension.
 
@@ -44,6 +45,8 @@ def run_hybrid_mc_for_d(
         If None, trains a new model.
     n_steps : int
         Training steps if training from scratch.
+    force : bool
+        Force recomputation.
 
     Returns
     -------
@@ -58,7 +61,7 @@ def run_hybrid_mc_for_d(
 
     # Skip if results already exist
     result_path = f"{out_dir}/hybrid_mc_results.json"
-    if os.path.exists(result_path):
+    if os.path.exists(result_path) and not force:
         print(f"  Skipping d={d} (found existing results)")
         with open(result_path) as f:
             return json.load(f)
@@ -164,6 +167,7 @@ def main():
     parser.add_argument("--n_mc", type=int, default=100_000)
     parser.add_argument("--model_base", type=str, default="results/scaling",
                         help="Base dir for pre-trained models (expects d_*/scaling_d*/)")
+    parser.add_argument("--force", action="store_true", help="Force recomputation even if results exist")
     args = parser.parse_args()
 
     seed_everything(42)
@@ -180,7 +184,7 @@ def main():
         if os.path.isdir(scaling_dir):
             model_dir = scaling_dir
 
-        all_results[str(d)] = run_hybrid_mc_for_d(d, args.n_mc, model_dir, args.n_steps)
+        all_results[str(d)] = run_hybrid_mc_for_d(d, args.n_mc, model_dir, args.n_steps, args.force)
 
     save_json(all_results, "results/hybrid_mc/hybrid_mc_summary.json")
 
