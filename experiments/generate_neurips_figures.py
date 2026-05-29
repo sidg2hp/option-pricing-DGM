@@ -125,10 +125,13 @@ def main():
 
     dgm_errs = [comp[str(d)]["dgm_mean_rel_error"] * 100 for d in comp_dims]
     zhou_errs = [comp[str(d)]["zhou_mean_rel_error"] * 100 for d in comp_dims]
+    fbsde_errs = [comp[str(d)].get("fbsde_atm_rel_error", np.nan) * 100 for d in comp_dims]
 
     ax.plot(comp_dims, dgm_errs, 'o-', color=CB_BLUE, label="DGM (PDE solver)",
             markerfacecolor='white', markeredgewidth=1.8, markersize=8, zorder=5)
     ax.plot(comp_dims, zhou_errs, 's--', color=CB_RED, label="Zhou et al. (MC regression)",
+            markerfacecolor='white', markeredgewidth=1.8, markersize=7, zorder=5)
+    ax.plot(comp_dims, fbsde_errs, '^-.', color=CB_PURPLE, label="Deep BSDE (FBSDE)",
             markerfacecolor='white', markeredgewidth=1.8, markersize=7, zorder=5)
 
     for i, d in enumerate(comp_dims):
@@ -143,19 +146,20 @@ def main():
     ax.set_ylabel("Mean Relative Error vs MC (%)")
     ax.set_title("Pricing Error vs. Problem Dimension")
     ax.set_xticks(comp_dims)
-    ax.set_ylim(0, max(max(dgm_errs), max(zhou_errs)) * 1.4)
+    max_fbsde = max([e for e in fbsde_errs if not np.isnan(e)])
+    ax.set_ylim(0, max(max(dgm_errs), max(zhou_errs), max_fbsde) * 1.4)
     ax.legend(loc='upper left', frameon=True)
     save_fig(fig, f"{FIG_DIR}/fig1_scaling_error")
     print("  [OK] fig1_scaling_error")
 
     # ================================================================
-    # FIG 2: 4-way grouped bar (DGM vs Zhou vs Hybrid MC vs MC SE)
+    # FIG 2: 5-way grouped bar (DGM vs Zhou vs Hybrid MC vs Deep BSDE vs MC SE)
     # ================================================================
-    print("Fig 2: 4-way method comparison...")
+    print("Fig 2: 5-way method comparison...")
     fig, ax = plt.subplots(figsize=(6.5, 3.8))
 
     x = np.arange(len(comp_dims))
-    width = 0.2
+    width = 0.15
 
     # Compute Hybrid MC mean relative error vs MC reference
     hmc_errs = []
@@ -166,9 +170,10 @@ def main():
         mask = mc_p > 1e-8
         hmc_errs.append(np.mean(np.abs(cv_p[mask] - mc_p[mask]) / mc_p[mask]) * 100)
 
-    b1 = ax.bar(x - 1.5*width, dgm_errs, width, label="DGM (PDE)", color=CB_BLUE, alpha=0.9)
-    b2 = ax.bar(x - 0.5*width, zhou_errs, width, label="Zhou (regression)", color=CB_RED, alpha=0.9)
-    b3 = ax.bar(x + 0.5*width, hmc_errs, width, label="Hybrid DGM-MC", color=CB_GREEN, alpha=0.9)
+    b1 = ax.bar(x - 2*width, dgm_errs, width, label="DGM (PDE)", color=CB_BLUE, alpha=0.9)
+    b2 = ax.bar(x - width, zhou_errs, width, label="Zhou (regression)", color=CB_RED, alpha=0.9)
+    b3 = ax.bar(x, hmc_errs, width, label="Hybrid DGM-MC", color=CB_GREEN, alpha=0.9)
+    b4 = ax.bar(x + width, fbsde_errs, width, label="Deep BSDE", color=CB_PURPLE, alpha=0.9)
 
     # MC SE as very small bars (scaled up for visibility)
     mc_se_pct = []
@@ -178,24 +183,24 @@ def main():
         mc_e = np.array(r["mc_errors"])
         mask = mc_p > 1e-8
         mc_se_pct.append(np.mean(mc_e[mask] / mc_p[mask]) * 100)
-    b4 = ax.bar(x + 1.5*width, mc_se_pct, width, label="MC std. error", color=CB_ORANGE, alpha=0.9)
+    b5 = ax.bar(x + 2*width, mc_se_pct, width, label="MC std. error", color=CB_ORANGE, alpha=0.9)
 
-    for bars in [b1, b2, b3]:
+    for bars in [b1, b2, b3, b4]:
         for bar in bars:
             h = bar.get_height()
-            if h > 0.5:
+            if h > 0.5 and not np.isnan(h):
                 ax.text(bar.get_x() + bar.get_width()/2, h + 0.08,
                         f"{h:.1f}", ha="center", va="bottom", fontsize=6)
 
     ax.set_xlabel("Number of Assets $d$")
     ax.set_ylabel("Mean Relative Error vs MC (%)")
-    ax.set_title("Four-Way Method Comparison")
+    ax.set_title("Five-Way Method Comparison")
     ax.set_xticks(x)
     ax.set_xticklabels([f"$d={d}$" for d in comp_dims])
-    ax.legend(fontsize=7, frameon=True, ncol=2)
+    ax.legend(fontsize=7, frameon=True, ncol=3)
     ax.set_ylim(0, max(max(dgm_errs), max(hmc_errs)) * 1.35)
-    save_fig(fig, f"{FIG_DIR}/fig2_4way_comparison")
-    print("  [OK] fig2_4way_comparison")
+    save_fig(fig, f"{FIG_DIR}/fig2_5way_comparison")
+    print("  [OK] fig2_5way_comparison")
 
     # ================================================================
     # FIG 3: Price comparison lines (all 4 methods per dimension)
@@ -591,7 +596,7 @@ def main():
     print("=" * 80)
 
     print("\n--- Table 1: Mean relative error vs MC reference ---\n")
-    print(f"{'d':>4}  {'DGM (PDE)':>12}  {'Zhou (regr.)':>14}  {'Hybrid MC':>12}  {'MC SE':>10}")
+    print(f"{'d':>4}  {'DGM (PDE)':>12}  {'Zhou (regr.)':>14}  {'Hybrid MC':>12}  {'Deep BSDE':>12}  {'MC SE':>10}")
     print("-" * 60)
     for d in comp_dims:
         r = comp[str(d)]
@@ -603,16 +608,20 @@ def main():
         print(f"{d:>4}  {r['dgm_mean_rel_error']*100:>11.2f}%  "
               f"{r['zhou_mean_rel_error']*100:>13.2f}%  "
               f"{hmc_err:>11.2f}%  "
+              f"{r.get('fbsde_atm_rel_error', np.nan)*100:>11.2f}%  "
               f"{mc_se:>10.2e}")
 
     for d in comp_dims:
         r = comp[str(d)]
         print(f"\n--- Table: Detailed prices at d={d} ---\n")
-        print(f"{'S0/K':>6}  {'DGM':>10}  {'Zhou NN':>10}  {'Hybrid MC':>10}  {'MC ref.':>10}")
-        print("-" * 55)
+        print(f"{'S0/K':>6}  {'DGM':>10}  {'Zhou NN':>10}  {'Hybrid MC':>10}  {'Deep BSDE':>10}  {'MC ref.':>10}")
+        print("-" * 65)
         for i in range(len(r["S0_test"])):
+            fbsde_val = r.get('fbsde_prices', [np.nan]*5)[i]
+            fbsde_str = f"{fbsde_val:>10.6f}" if not np.isnan(fbsde_val) else f"{'---':>10}"
             print(f"{r['S0_test'][i]:>6.2f}  {r['dgm_prices'][i]:>10.6f}  "
                   f"{r['zhou_prices'][i]:>10.6f}  {r['cv_prices'][i]:>10.6f}  "
+                  f"{fbsde_str}  "
                   f"{r['mc_prices'][i]:>10.6f}")
 
     n_figs = len([f for f in os.listdir(FIG_DIR) if f.endswith('.png')])
