@@ -470,7 +470,7 @@ Deep neural networks for PDE solving have notoriously large memory footprints, b
 
 ### Hybrid MC Control Variate
 
-**Setup**: For each $d \in \{1, 2, 3, 5\}$: pre-trained DGM model used as control variate for 100k MC paths.
+**Setup**: For each $d \in \{1, 2, 3, 5, 7, 10\}$: pre-trained DGM model used as control variate for 100k MC paths.
 
 | $d$ | Vanilla SE | CV SE | Variance reduction | SE reduction factor |
 |:-:|:-:|:-:|:-:|:-:|
@@ -478,6 +478,8 @@ Deep neural networks for PDE solving have notoriously large memory footprints, b
 | 2 | 3.80×10⁻⁴ | 2.95×10⁻⁷ | **99.9999%** | **1287×** |
 | 3 | 3.44×10⁻⁴ | 2.42×10⁻⁷ | **99.9999%** | **1422×** |
 | 5 | 3.15×10⁻⁴ | 2.46×10⁻⁷ | **99.9999%** | **1281×** |
+| 7 | 8.96×10⁻⁵ | 1.26×10⁻⁷ | **99.9998%** | **710×** |
+| 10 | 8.60×10⁻⁵ | 1.72×10⁻⁷ | **99.9996%** | **499×** |
 
 The robust structural formulation of the DGM solution precisely correlates with the true discounted payoff, reducing MC standard errors by **>1000×** at every dimension. The optimal coefficient $c^* \approx -0.951$ is stable across dimensions. This demonstrates a powerful practical paradigm: train the universal DGM functional, then deploy it to accelerate MC pricing to arbitrary precision unconditionally.
 
