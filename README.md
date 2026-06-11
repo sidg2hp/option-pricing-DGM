@@ -480,9 +480,9 @@ Deep neural networks for PDE solving have notoriously large memory footprints, b
 | 5 | 3.15×10⁻⁴ | 2.46×10⁻⁷ | **99.9999%** | **1281×** |
 | 7 | 8.96×10⁻⁵ | 1.26×10⁻⁷ | **99.9998%** | **710×** |
 | 10 | 8.60×10⁻⁵ | 1.72×10⁻⁷ | **99.9996%** | **499×** |
-| 25 | 8.72×10⁻⁵ | 7.93×10⁻⁵ | **17.2%** | **1.09×** |
-| 50 | 8.54×10⁻⁵ | 7.89×10⁻⁵ | **14.6%** | **1.08×** |
-| 100 | 8.46×10⁻⁵ | 7.42×10⁻⁵ | **23.1%** | **1.14×** |
+| 25 | 2.76×10⁻⁴ | 5.61×10⁻⁵ | **95.9%** | **4.9×** |
+| 50 | 2.70×10⁻⁴ | 5.58×10⁻⁵ | **95.7%** | **4.8×** |
+| 100 | 2.68×10⁻⁴ | 5.25×10⁻⁵ | **96.2%** | **5.1×** |
 
 The robust structural formulation of the DGM solution precisely correlates with the true discounted payoff, reducing MC standard errors by **>1000×** for $d \le 10$. The optimal coefficient $c^* \approx -0.951$ is remarkably stable. While the variance reduction naturally degrades for extremely high dimensions ($d \ge 25$) as the underlying DGM PDE approximation becomes less accurate, this demonstrates a powerful practical paradigm: train the universal DGM functional, then deploy it to unconditionally accelerate MC pricing across standard dimensionality.
 

@@ -100,13 +100,12 @@ def main():
     hmc = load_json(hmc_path) if os.path.exists(hmc_path) else {}
 
     # Load scaling results
-    scaling = {}
-    for d in [1, 2, 3, 5, 7, 10]:
-        for p in [f"results/scaling/d_{d}/result.json",
-                  f"results_from_cluster/scaling/d_{d}/result.json"]:
-            if os.path.exists(p):
-                scaling[d] = load_json(p)
-                break
+    scaling_summary_path = "results/scaling/scaling_summary.json"
+    if os.path.exists(scaling_summary_path):
+        scaling_raw = load_json(scaling_summary_path)
+        scaling = {int(k): v for k, v in scaling_raw.items()}
+    else:
+        scaling = {}
 
     comp_dims = sorted([int(k) for k in comp.keys()])
     all_dims = sorted(set(comp_dims) | set(scaling.keys()))
@@ -345,18 +344,23 @@ def main():
         ax1.bar(x + w/2, cv_se, w, label="DGM-CV MC", color=CB_GREEN, alpha=0.9)
         ax1.set_yscale("log")
         ax1.set_xticks(x)
-        ax1.set_xticklabels([f"$d={d}$" for d in hmc_dims])
+        ax1.set_xticklabels([f"{d}" for d in hmc_dims])
+        ax1.set_xlabel("Dimension ($d$)")
         ax1.set_ylabel("Standard Error (log scale)")
         ax1.set_title("MC Standard Error Comparison")
         ax1.legend(fontsize=7, frameon=True)
 
         se_reduction = [hmc[d]["vanilla_se"] / hmc[d]["cv_se"] for d in hmc_dims]
-        bars = ax2.bar([f"$d={d}$" for d in hmc_dims], se_reduction,
-                       color=CB_CYAN, alpha=0.9, width=0.5)
+        bars = ax2.bar(x, se_reduction,
+                       color=CB_CYAN, alpha=0.9, width=0.6)
         for bar, val in zip(bars, se_reduction):
-            ax2.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 20,
-                     f"{val:.0f}x", ha="center", fontsize=8, fontweight='bold')
+            ax2.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.5,
+                     f"{val:.0f}x", ha="center", fontsize=7.5, fontweight='bold')
+        ax2.set_xticks(x)
+        ax2.set_xticklabels([f"{d}" for d in hmc_dims])
+        ax2.set_xlabel("Dimension ($d$)")
         ax2.set_ylabel("SE Reduction Factor")
+        ax2.set_yscale("log")
         ax2.set_title("Variance Reduction Magnitude")
 
         plt.tight_layout()
@@ -481,11 +485,11 @@ def main():
     # ================================================================
     if scaling:
         print("Fig 10: Parameter efficiency...")
-        s_dims = sorted(scaling.keys())
+        s_dims = sorted(scaling.keys(), key=int)
         params = [scaling[d].get("n_params", 0) for d in s_dims]
         s_errs = [scaling[d].get("rel_l2_error", 0) * 100 for d in s_dims]
 
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 3.2))
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 3.5))
 
         # Left: params vs d
         ax1.bar([f"$d={d}$" for d in s_dims], [p/1e6 for p in params],
@@ -495,6 +499,7 @@ def main():
                      ha='center', fontsize=7.5, fontweight='bold')
         ax1.set_ylabel("Parameters (millions)")
         ax1.set_title("Model Size vs. Dimension")
+        ax1.tick_params(axis='x', rotation=45)
 
         # Right: error vs params (efficiency)
         for i, d in enumerate(s_dims):
