@@ -25,10 +25,12 @@ from utils.math_utils import build_equicorrelation_matrix, validate_correlation_
 from utils.random import seed_everything
 
 
+from typing import Optional
+
 def run_hybrid_mc_for_d(
     d: int,
     n_mc: int = 100_000,
-    model_dir: str | None = None,
+    model_dir: Optional[str] = None,
     n_steps: int = 50_000,
     force: bool = False,
 ) -> dict:
