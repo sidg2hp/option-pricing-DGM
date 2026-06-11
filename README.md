@@ -437,7 +437,7 @@ The pricing error improves significantly at $d=5$ due to scaling the model width
 
 ### Parameter Efficiency
 
-Deep neural networks for PDE solving have notoriously large memory footprints, but our DGM formulation demonstrates exceptional parameter efficiency. Because the spatial coordinate $x \in \mathbb{R}^d$ is re-injected at every layer through the gating mechanism, the network requires minimal width to capture complex multidimensional surfaces. We successfully scale up to $d=10$ dimensions with fewer than 4.5 million parameters, ensuring the model can be trained and deployed on commodity GPUs with stringent memory budgets (e.g., standard 6GB/8GB VRAM) without compromising representational power.
+Deep neural networks for PDE solving have notoriously large memory footprints, but our DGM formulation demonstrates exceptional parameter efficiency. Because the spatial coordinate $x \in \mathbb{R}^d$ is re-injected at every layer through the gating mechanism, the network requires minimal width to capture complex multidimensional surfaces. We successfully scale up to $d=100$ dimensions with ~5 million parameters, ensuring the model can be trained and deployed on commodity GPUs with stringent memory budgets (e.g., standard 6GB/8GB VRAM) without compromising representational power.
 
 <p align="center">
   <img src="figures/publication/fig10_parameters.png" width="700" alt="Parameter Efficiency"/>
